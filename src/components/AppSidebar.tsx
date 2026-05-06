@@ -77,8 +77,8 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
           <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
             <li>
               <Link
-                href="/ger-niveaus"
-                className={activeHref === "/ger-niveaus" ? "font-medium text-blue-700 dark:text-blue-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}
+                href="/system/ger-settings"
+                className={activeHref === "/system/ger-settings" || activeHref === "/ger-niveaus" ? "font-medium text-blue-700 dark:text-blue-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}
               >
                 GER-Niveaus
               </Link>
