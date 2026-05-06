@@ -1777,7 +1777,7 @@ export default function GeneratorForm() {
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                 <SlidersVertical className="h-5 w-5" aria-hidden="true" />
-                Pflichtfelder
+                Basisdaten
               </h2>
               <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 space-y-5">
@@ -1818,7 +1818,14 @@ export default function GeneratorForm() {
                   </select>
                 </div>
 
-                <div>
+              </div>
+            </section>
+
+            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Inhalt und Kontext</h2>
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Thema <span className="text-red-500">*</span></label>
                   <input
                     type="text"
@@ -1829,13 +1836,6 @@ export default function GeneratorForm() {
                     className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </div>
-              </div>
-            </section>
-
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Inhalt und Kontext</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Themendetails</label>
                   <textarea value={form.themendetails} onChange={(event) => updateField("themendetails", event.target.value)} rows={3} placeholder="Konkrete Aspekte, Plotpunkte, Eckdaten oder Übersteuerungen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />

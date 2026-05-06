@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Encode_Sans_Semi_Condensed } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const encodeSans = Encode_Sans_Semi_Condensed({
@@ -23,7 +24,7 @@ export default function RootLayout({
       lang="de"
       className={`${encodeSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><Providers>{children}</Providers></body>
     </html>
   );
 }
