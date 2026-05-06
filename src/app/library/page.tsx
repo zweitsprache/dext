@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Check, Copy, FileCode } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
@@ -221,7 +222,7 @@ const DUMMY_TEXT_LIBRARY: LibraryText[] = [
   },
 ];
 
-export default function LibraryPage() {
+function LibraryContent() {
   const searchParams = useSearchParams();
   const [librarySearch, setLibrarySearch] = useState("");
   const [libraryLevelFilter, setLibraryLevelFilter] = useState<string>("alle");
@@ -593,5 +594,13 @@ export default function LibraryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <Suspense>
+      <LibraryContent />
+    </Suspense>
   );
 }
