@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { BrainCircuit, FileCode, ListChecks, PencilLine, Play, SlidersVertical, TextAlignStart } from "lucide-react";
+import AppSidebar from "@/components/AppSidebar";
 import { useEffect, useMemo, useState } from "react";
 
 const TEXTSORTEN = [
@@ -17,6 +19,27 @@ const TEXTSORTEN = [
   "Anleitung",
   "Brief / Mail",
 ] as const;
+
+const DISABLED_TEXTSORTEN = [
+  "Werbetext / Anzeige (Inserate, Stellenanzeigen, Wohnungsinserate – sehr DaZ-relevant)",
+  "Formular (Anmeldung, Antrag – wichtig für Alltagsbewältigung)",
+  "Speisekarte / Fahrplan / Wetterbericht (diskontinuierliche Texte)",
+  "Einladung",
+  "Notiz / Mitteilung (z.B. an Mitbewohner, Kolleg:innen)",
+  "Beschwerde / Reklamation",
+  "Beschreibung",
+  "Rezension",
+  "Tagebucheintrag",
+  "Rede / Vortrag",
+  "Umfrage",
+] as const;
+const SORTED_TEXTSORTEN = [...TEXTSORTEN].sort((a, b) => a.localeCompare(b, "de"));
+const SORTED_DISABLED_TEXTSORTEN = [...DISABLED_TEXTSORTEN].sort((a, b) => a.localeCompare(b, "de"));
+
+type TextsorteApiEntry = {
+  name: string;
+  enabled: boolean;
+};
 
 const NIVEAUS = ["A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2"] as const;
 const ZIELGRUPPEN = [
@@ -1261,6 +1284,8 @@ export default function GeneratorForm() {
   const [taskResult, setTaskResult] = useState<TaskResultData | null>(null);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState("");
+  const [enabledTextsorten, setEnabledTextsorten] = useState<string[]>(SORTED_TEXTSORTEN);
+  const [disabledTextsorten, setDisabledTextsorten] = useState<string[]>(SORTED_DISABLED_TEXTSORTEN);
 
   const filteredPresets = useMemo(() => {
     if (!searchSubmitted) return null;
@@ -1294,7 +1319,7 @@ export default function GeneratorForm() {
   }
 
   const isDialogLike = form.textsorte === "Dialog" || form.textsorte === "Interview";
-  const textsortenDefaults = TEXTSORTEN_DEFAULTS[form.textsorte];
+  const textsortenDefaults = TEXTSORTEN_DEFAULTS[form.textsorte] ?? TEXTSORTEN_DEFAULTS["Sachtext"];
   const perspectiveValue = form.erzaehlperspektive === "textsortennatürlich" ? textsortenDefaults.perspective : form.erzaehlperspektive;
   const addressValue = form.leseransprache === "textsortennatürlich" ? textsortenDefaults.address : form.leseransprache;
   const toneValue = form.tonalitaet === "textsortennatürlich" ? textsortenDefaults.tone : form.tonalitaet;
@@ -1326,6 +1351,50 @@ export default function GeneratorForm() {
       setProcessingText(getEditableResultText(result));
     }
   }, [workflowStep, processingAction, result]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTextsorten() {
+      try {
+        const response = await fetch("/api/textsorten");
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { textsorten?: TextsorteApiEntry[] };
+        if (!Array.isArray(data.textsorten)) {
+          return;
+        }
+
+        const enabled = data.textsorten
+          .filter((entry) => entry && entry.enabled)
+          .map((entry) => entry.name)
+          .sort((left, right) => left.localeCompare(right, "de"));
+        const disabled = data.textsorten
+          .filter((entry) => entry && !entry.enabled)
+          .map((entry) => entry.name)
+          .sort((left, right) => left.localeCompare(right, "de"));
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (enabled.length > 0) {
+          setEnabledTextsorten(enabled);
+        }
+        setDisabledTextsorten(disabled);
+      } catch {
+        // Keep static fallback if textsorten endpoint is unavailable.
+      }
+    }
+
+    void loadTextsorten();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -1441,66 +1510,22 @@ export default function GeneratorForm() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="xl:flex xl:items-start">
-        <aside className="bg-white p-5 shadow-[10px_0_28px_rgba(15,23,42,0.08)] dark:bg-zinc-900 dark:shadow-[10px_0_28px_rgba(0,0,0,0.35)] xl:sticky xl:top-0 xl:flex xl:min-h-screen xl:w-96 xl:shrink-0 xl:flex-col">
-          <div className="mb-6">
-            <Image
-              src="/logos/dext.svg"
-              alt="Dext"
-              width={153}
-              height={59}
-              priority
-              className="h-auto w-36"
-            />
-          </div>
-          <div className="flex-1 space-y-6 border-l border-zinc-200 pl-4 dark:border-zinc-700">
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Lorem Ipsum</h2>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <li>Lorem dolor</li>
-                <li>Ipsum amet</li>
-                <li>Sit elit</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Dolor Sit</h2>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <li>Amet lorem</li>
-                <li>Consectetur ipsum</li>
-                <li>Adipiscing elit</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Amet Elit</h2>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <li>Praesent lorem</li>
-                <li>Vivamus ipsum</li>
-                <li>Donec dolor</li>
-              </ul>
-            </section>
-          </div>
-
-          <div className="mt-8 border-t border-zinc-200 pt-4 dark:border-zinc-700 xl:mt-auto">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Lorem User</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">ipsum@example.com</div>
-              </div>
-              <button
-                type="button"
-                className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </aside>
+        <AppSidebar
+          activeHref="/"
+          enabledTextsorten={enabledTextsorten}
+          disabledTextsorten={disabledTextsorten}
+        />
 
         <div className="flex-1">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <div className="mb-10 max-w-3xl">
+            <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">DaZ-Lesetextgenerator</h1>
+              <Link
+                href="/library"
+                className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                Zur Textbibliothek
+              </Link>
             </div>
 
             <section className="radius-section-card mb-8 border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -1566,7 +1591,7 @@ export default function GeneratorForm() {
                 <FileCode className="h-5 w-5" aria-hidden="true" />
                 Presets
               </h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
 
               <div className="mt-4 flex gap-2">
                 <div className="flex flex-1 gap-2">
@@ -1728,7 +1753,7 @@ export default function GeneratorForm() {
                 <BrainCircuit className="h-5 w-5" aria-hidden="true" />
                 Modell
               </h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-4 grid grid-cols-4 gap-2">
                 {MODEL_OPTIONS.map((option) => (
                   <button
@@ -1754,7 +1779,7 @@ export default function GeneratorForm() {
                 <SlidersVertical className="h-5 w-5" aria-hidden="true" />
                 Pflichtfelder
               </h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 space-y-5">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Niveau <span className="text-red-500">*</span></label>
@@ -1784,8 +1809,11 @@ export default function GeneratorForm() {
                     onChange={(event) => updateField("textsorte", event.target.value as Textsorte)}
                     className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   >
-                    {TEXTSORTEN.map((textsorte) => (
+                    {enabledTextsorten.map((textsorte) => (
                       <option key={textsorte} value={textsorte}>{textsorte}</option>
+                    ))}
+                    {disabledTextsorten.map((textsorte) => (
+                      <option key={textsorte} value={textsorte} disabled>{textsorte} (demnaechst)</option>
                     ))}
                   </select>
                 </div>
@@ -1806,7 +1834,7 @@ export default function GeneratorForm() {
 
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Inhalt und Kontext</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Themendetails</label>
@@ -1839,7 +1867,7 @@ export default function GeneratorForm() {
 
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Perspektive und Ansprache</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Erzählperspektive</label>
@@ -1860,7 +1888,7 @@ export default function GeneratorForm() {
 
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Didaktische Steuerung</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Lernschwerpunkt</label>
@@ -1883,7 +1911,7 @@ export default function GeneratorForm() {
 
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Umfang und Ausgabe</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-3">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Wortzahl</label>
@@ -1914,7 +1942,7 @@ export default function GeneratorForm() {
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                   <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Bearbeitung</h2>
-                  <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     <button
                       type="button"
@@ -1958,7 +1986,7 @@ export default function GeneratorForm() {
                 {processingAction === "redigieren" && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text redigieren</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                     <textarea
                       value={processingText}
                       onChange={(event) => setProcessingText(event.target.value)}
@@ -1972,7 +2000,7 @@ export default function GeneratorForm() {
                 {processingAction === "kuerzen" && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text kürzen</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                     <div className="mt-5 space-y-4">
                       <textarea
                         value={getEditableResultText(result)}
@@ -2010,7 +2038,7 @@ export default function GeneratorForm() {
                 {processingAction === "verlaengern" && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text verlängern</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                     <div className="mt-5 space-y-4">
                       <textarea
                         value={getEditableResultText(result)}
@@ -2033,7 +2061,7 @@ export default function GeneratorForm() {
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                   <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Audio generieren</h2>
-                  <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                   <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-300">
                     Die Audio-Funktion wird im nächsten Schritt definiert. Die Oberfläche ist hier jetzt vorbereitet.
                   </p>
@@ -2043,7 +2071,7 @@ export default function GeneratorForm() {
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                   <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Aufgaben erstellen</h2>
-                  <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
 
                   <div className="mt-5 space-y-6">
                     <div>
@@ -2105,7 +2133,7 @@ export default function GeneratorForm() {
                 {selectedTaskFormats.includes("lueckentext") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Lückentext</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
 
                     <div className="mt-5 space-y-6">
                       <div>
@@ -2300,7 +2328,7 @@ export default function GeneratorForm() {
                 {selectedTaskFormats.includes("mcq") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">MCQ</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <div>
@@ -2387,7 +2415,7 @@ export default function GeneratorForm() {
                 {selectedTaskFormats.includes("truefalse") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Richtig/Falsch</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <div>
@@ -2449,7 +2477,7 @@ export default function GeneratorForm() {
                 {(selectedTaskFormats.includes("satzpuzzle") || selectedTaskFormats.includes("textpuzzle") || selectedTaskFormats.includes("zuordnung") || selectedTaskFormats.includes("umformung") || selectedTaskFormats.includes("wfragen") || selectedTaskFormats.includes("stichwort")) && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Weitere Formate</h2>
-                    <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
                     <div className="mt-5 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                       {selectedTaskFormats.includes("satzpuzzle") && <p>Satzpuzzle: Wörter in richtige Reihenfolge bringen.</p>}
                       {selectedTaskFormats.includes("textpuzzle") && <p>Textpuzzle: Absätze ordnen.</p>}
@@ -2478,7 +2506,7 @@ export default function GeneratorForm() {
           <aside className="space-y-6">
             <div className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Aktive Defaults</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               <div className="mt-4 overflow-hidden radius-card border border-zinc-200 dark:border-zinc-800">
                 <table className="w-full border-collapse text-sm text-zinc-600 dark:text-zinc-300">
                   <tbody>
@@ -2505,7 +2533,7 @@ export default function GeneratorForm() {
 
             <div className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Ergebnis</h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
               {!result && !loading && <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">Der generierte Text erscheint hier als strukturierte Ausgabe mit QA-Signalen.</p>}
               {loading && !result && (
                 <div className="mt-4 radius-card border border-zinc-200 p-4 dark:border-zinc-800">

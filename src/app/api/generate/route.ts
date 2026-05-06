@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
+import { storeGeneratedText } from "@/lib/neon";
 
 type ModelProvider = "anthropic" | "openai";
 
@@ -129,6 +130,7 @@ type GenerateRequest = {
   glossar?: string;
   kulturraum?: string;
   model?: string;
+  textOrigin?: "user" | "system" | "unknown";
 };
 
 type GlossaryItem = {
@@ -141,6 +143,7 @@ type StructuredText = {
   teaser: string;
   paragraphs: string[];
   glossary: GlossaryItem[];
+  linguisticSummary: string;
 };
 
 type QaSummary = {
@@ -245,7 +248,8 @@ Das Objekt muss genau diese Struktur haben:
   "title": "string",
   "teaser": "string",
   "paragraphs": ["string", "..."],
-  "glossary": [{ "lemma": "string", "explanation": "string" }]
+  "glossary": [{ "lemma": "string", "explanation": "string" }],
+  "linguisticSummary": "string"
 }
 
 Regeln für dieses JSON:
@@ -253,6 +257,7 @@ Regeln für dieses JSON:
 - teaser: max. 140 Zeichen.
 - paragraphs: ${dialogLike ? "ein Array aus Sprecherwechseln oder dialognahen Abschnitten" : "ein Array mit genau der verlangten Absatzzahl"}.
 - glossary: ${glossaryMode === "nein" ? "ein leeres Array" : "ein Array mit 6-12 Einträgen oder weniger, falls nur schwierige Wörter glossiert werden sollen"}.
+- linguisticSummary: Maximal 2 kurze Sätze für Lehrpersonen. Nenne direkt die dominanten grammatischen Strukturen und den didaktischen Schwerpunkt. Kein Einstieg wie «Dieser Text», «Der Text», «In diesem Text». Keine Empfehlungen, wie man ihn einsetzt. Verwende ausschliesslich die Anführungszeichen « und », niemals " oder '. Beispiel: «Perfekt und weil-Sätze auf A2.1. Alltagswortschatz zu Arbeit und Routinen.»
 - Keine zusätzlichen Felder.
 - Keine Markdown-Formatierung.
 `;
@@ -397,6 +402,7 @@ function normalizeInput(body: GenerateRequest): Required<GenerateRequest> {
     glossar: body.glossar ?? "ja",
     kulturraum: body.kulturraum ?? "CH",
     model: body.model ?? "gpt-4.1",
+    textOrigin: body.textOrigin ?? "system",
   };
 }
 
@@ -469,6 +475,7 @@ function parseJsonResponse(raw: string): StructuredText {
           }))
           .filter((entry) => entry.lemma && entry.explanation)
       : [],
+    linguisticSummary: typeof parsed.linguisticSummary === "string" ? parsed.linguisticSummary.trim() : "",
   };
 }
 
@@ -705,6 +712,17 @@ export async function POST(request: NextRequest) {
         address: input.leseransprache,
       },
     };
+
+    void storeGeneratedText({
+      model: input.model,
+      provider,
+      niveau: input.niveau,
+      textsorte: input.textsorte,
+      zielgruppe: input.zielgruppe,
+      textOrigin: input.textOrigin,
+      requestPayload: input,
+      responsePayload: payload,
+    });
 
     return new Response(JSON.stringify(payload), {
       headers: {

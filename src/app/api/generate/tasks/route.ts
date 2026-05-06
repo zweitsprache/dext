@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { storeGeneratedTasks } from "@/lib/neon";
 
 type ModelProvider = "anthropic" | "openai";
 
@@ -336,7 +337,7 @@ async function generateValidatedTaskResponse(generateFn: GenerateRawFn, systemPr
 
 function normalizeInput(body: TaskRequest): NormalizedTaskRequest {
   return {
-    model: body.model ?? "gpt-4.1",
+    model: body.model ?? "claude-opus-4-5",
     niveau: body.niveau ?? "A2.1",
     textsorte: body.textsorte ?? "Sachtext",
     zielgruppe: body.zielgruppe ?? "allgemein erwachsen",
@@ -401,6 +402,18 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await generateValidatedTaskResponse(generateFn, systemPrompt, input);
+
+    void storeGeneratedTasks({
+      model: input.model,
+      provider,
+      niveau: input.niveau,
+      textsorte: input.textsorte,
+      zielgruppe: input.zielgruppe,
+      selectedFormats: input.selectedFormats,
+      sourceWordCount: input.sourceText.trim().split(/\s+/).filter(Boolean).length,
+      requestPayload: input,
+      responsePayload: result,
+    });
 
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },

@@ -16,6 +16,29 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Neon Database
+
+This project is now wired to Neon Postgres using `@neondatabase/serverless`.
+
+1. Add your Neon connection string to `.env.local`:
+
+```bash
+DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+```
+
+2. Start the app and verify database connectivity:
+
+```bash
+curl http://localhost:3000/api/db/health
+```
+
+When `DATABASE_URL` is configured, generated texts and generated tasks are stored automatically in:
+
+- `generated_texts`
+- `generated_tasks`
+
+Both tables are created automatically on first write.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
