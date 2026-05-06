@@ -213,7 +213,7 @@ export default function SignInPage() {
         <div className="my-auto py-12">
           <h2 className="text-3xl font-bold leading-tight text-white">
             Niveaukonsistente Lesetexte<br />
-            <span className="text-white/50">auf Knopfdruck.</span>
+            <span className="text-white/50">für Deutsch als Zweitsprache.</span>
           </h2>
           <p className="mt-3 text-sm text-white/40 leading-relaxed max-w-sm">
             Texte für Deutsch als Zweitsprache — passgenau nach GER-Niveau,
