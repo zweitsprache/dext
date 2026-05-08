@@ -2,15 +2,20 @@
 @import "@neondatabase/auth-ui/tailwind";
 @plugin "@tailwindcss/typography";
 
-/* Use class-based dark mode so we can force dark permanently */
+/* Class-based dark mode — toggled by next-themes via .dark on <html> */
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #18181b;
-  --foreground: #fafafa;
+  --background: #ffffff;
+  --foreground: #18181b;
   --radius-single-line: 0.45rem;
   --radius-card: 0.7rem;
   --radius-section-card: 0.95rem;
+}
+
+.dark {
+  --background: #18181b;
+  --foreground: #fafafa;
 }
 
 @theme inline {
@@ -19,6 +24,20 @@
   --font-sans: var(--font-encode-sans);
   --radius-xl: var(--radius-card);
   --radius-2xl: var(--radius-section-card);
+  /* Custom accent — warm gold #B8893A, used for dark-mode highlights */
+  --color-accent-200: #f2ddb2;
+  --color-accent-300: #ddb96e;
+  --color-accent-400: #c99a47;
+  --color-accent-500: #b8893a;
+  --color-accent-700: #7a5a20;
+  --color-accent-800: #4f3a14;
+  --color-accent-900: #2c200a;
+  --color-accent-950: #160f04;
+  /* Sage green #9AA180 — used for titles, icons, and section dividers */
+  --color-sage-600: #9aa180;
+  --color-sage-700: #7d8567;
+  --color-sage-800: #616856;
+  --color-sage-900: #454b3d;
 }
 
 html {
@@ -31,6 +50,15 @@ body {
   font-family: var(--font-sans), Arial, sans-serif;
 }
 
+/* Minimal scrollbar — transparent track, thin neutral thumb */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: rgba(113, 113, 122, 0.4) transparent;
+}
+
 .radius-single-line {
   border-radius: var(--radius-single-line);
 }
@@ -41,6 +69,27 @@ body {
 
 .radius-section-card {
   border-radius: var(--radius-section-card);
+}
+
+/* Enforce section title divider colors in light/dark themes. */
+.section-divider-accent {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: #0284c7 !important;
+}
+
+.section-divider-line {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: #d4d4d8 !important;
+}
+
+.dark .section-divider-accent {
+  border-bottom-color: #9aa180 !important;
+}
+
+.dark .section-divider-line {
+  border-bottom-color: #3f3f46 !important;
 }
 
 select.radius-single-line {

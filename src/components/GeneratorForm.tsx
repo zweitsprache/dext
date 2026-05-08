@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { BrainCircuit, FileCode, ListChecks, PencilLine, Play, SlidersVertical, TextAlignStart } from "lucide-react";
+import { Astroid, BrainCircuit, CirclePile, FileStack, ListChecks, Milestone, PencilLine, PencilRuler, Play, Settings2, SlidersVertical, TextAlignStart, View } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useState } from "react";
 
 const TEXTSORTEN = [
@@ -74,6 +76,7 @@ const MODEL_OPTIONS: Array<{ id: string; label: string; provider: "anthropic" | 
   { id: "gpt-4.1", label: "GPT-4.1", provider: "openai" },
   { id: "gpt-4o", label: "GPT-4o", provider: "openai" },
   { id: "gpt-4o-mini", label: "GPT-4o mini", provider: "openai" },
+  { id: "qwen3.5-plus", label: "Qwen 3.5", provider: "openai" },
 ];
 
 const NIVEAU_BESCHREIBUNGEN: Record<string, string> = {
@@ -1052,10 +1055,10 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
 
         {renderedOptions.length > 0 && (
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Wortbank</div>
+            <div className="text-base font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Wortbank</div>
             <div className="mt-2 flex flex-wrap gap-2">
               {renderedOptions.map((option) => (
-                <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-base text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                   {option}
                 </span>
               ))}
@@ -1069,13 +1072,13 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
   if (task.format === "satzpuzzle" || task.format === "textpuzzle") {
     return (
       <div className="mt-3 space-y-4">
-        <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{task.question}</p>
+        <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
 
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Bausteine</div>
+          <div className="text-base font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Bausteine</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {renderedOptions.map((option, index) => (
-              <span key={`${task.id}-piece-${index}`} className="radius-single-line border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200">
+              <span key={`${task.id}-piece-${index}`} className="radius-single-line border border-sky-200 bg-sky-50 px-3 py-1.5 text-base font-medium text-sky-800 dark:border-accent-900 dark:bg-accent-950 dark:text-accent-200">
                 {option}
               </span>
             ))}
@@ -1083,10 +1086,10 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
         </div>
 
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Reihenfolge</div>
+          <div className="text-base font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Reihenfolge</div>
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {renderedOptions.map((_, index) => (
-              <div key={`${task.id}-slot-${index}`} className="radius-single-line border border-dashed border-zinc-300 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-700 dark:text-zinc-500">
+              <div key={`${task.id}-slot-${index}`} className="radius-single-line border border-dashed border-zinc-300 px-3 py-2 text-center text-base text-zinc-400 dark:border-zinc-700 dark:text-zinc-500">
                 {index + 1}
               </div>
             ))}
@@ -1099,11 +1102,11 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
   if (task.format === "mcq") {
     return (
       <div className="mt-3 space-y-3">
-        <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{task.question}</p>
-        <ol className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+        <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
+        <ol className="space-y-2 text-base text-zinc-700 dark:text-zinc-300">
           {renderedOptions.map((option, index) => (
             <li key={`${task.id}-option-${index}`} className="flex items-start gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-              <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-[11px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+              <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-base font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                 {String.fromCharCode(65 + index)}
               </span>
               <span>{option}</span>
@@ -1117,10 +1120,10 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
   if (task.format === "truefalse") {
     return (
       <div className="mt-3 space-y-3">
-        <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{task.question}</p>
+        <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
         <div className="flex flex-wrap gap-2">
           {renderedOptions.map((option) => (
-            <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
+            <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 px-3 py-1.5 text-base text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
               {option}
             </span>
           ))}
@@ -1131,9 +1134,9 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
 
   return (
     <div className="mt-3 space-y-3">
-      <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{task.question}</p>
+      <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
       {renderedOptions.length > 0 && (
-        <ol className="space-y-1 text-sm text-zinc-600 dark:text-zinc-300">
+        <ol className="space-y-1 text-base text-zinc-600 dark:text-zinc-300">
           {renderedOptions.map((option) => (
             <li key={`${task.id}-${option}`}>{option}</li>
           ))}
@@ -1260,16 +1263,117 @@ function estimateLueckenCandidates(text: string, config: LueckentextConfig): num
   return candidates.length;
 }
 
+const LABEL_SECTION_MAP: Record<string, string> = {
+  "Niveau": "section-niveau",
+  "Textsorte": "section-niveau",
+  "Thema": "section-inhalt",
+  "Themendetails": "section-inhalt",
+  "Zielgruppe": "section-inhalt",
+  "Setting": "section-inhalt",
+  "Tonalität": "section-inhalt",
+  "Kulturraum": "section-inhalt",
+  "Perspektive": "section-perspektive",
+  "Leseransprache": "section-perspektive",
+  "Lernschwerpunkt": "section-didaktik",
+  "Pflichtwortschatz": "section-didaktik",
+  "Tabuwortschatz": "section-didaktik",
+  "Personen": "section-didaktik",
+  "Wortzahl": "section-umfang",
+  "Absatzzahl": "section-umfang",
+  "Glossar": "section-umfang",
+};
+
+function RedigiertEditor({ content, onChange }: { content: string; onChange: (text: string) => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content,
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+  });
+
+  // Sync external content changes (e.g. when result is loaded)
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content, false);
+    }
+  }, [content, editor]);
+
+  return (
+    <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Text redigieren</h2>
+      <div className="mt-3 flex">
+        <div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" />
+        <div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" />
+      </div>
+      {/* Toolbar */}
+      <div className="mt-4 flex flex-wrap gap-1 rounded-t border border-b-0 border-zinc-300 bg-zinc-50 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+          className={`rounded px-2 py-1 text-sm font-bold transition-colors ${editor?.isActive("bold") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Fett"
+        >B</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          className={`rounded px-2 py-1 text-sm italic transition-colors ${editor?.isActive("italic") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Kursiv"
+        >I</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleStrike().run()}
+          className={`rounded px-2 py-1 text-sm line-through transition-colors ${editor?.isActive("strike") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Durchgestrichen"
+        >S</button>
+        <div className="mx-1 w-px self-stretch bg-zinc-300 dark:bg-zinc-600" />
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          className={`rounded px-2 py-1 text-sm transition-colors ${editor?.isActive("bulletList") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Liste"
+        >• Liste</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          className={`rounded px-2 py-1 text-sm transition-colors ${editor?.isActive("orderedList") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Nummerierte Liste"
+        >1. Liste</button>
+        <div className="mx-1 w-px self-stretch bg-zinc-300 dark:bg-zinc-600" />
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().undo().run()}
+          disabled={!editor?.can().undo()}
+          className="rounded px-2 py-1 text-sm transition-colors hover:bg-zinc-200 disabled:opacity-40 dark:hover:bg-zinc-700"
+          title="Rückgängig"
+        >↩</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().redo().run()}
+          disabled={!editor?.can().redo()}
+          className="rounded px-2 py-1 text-sm transition-colors hover:bg-zinc-200 disabled:opacity-40 dark:hover:bg-zinc-700"
+          title="Wiederholen"
+        >↪</button>
+      </div>
+      {/* Editor area */}
+      <div className="min-h-[24rem] rounded-b border border-zinc-300 bg-white px-3.5 py-3 text-base text-zinc-900 focus-within:border-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 [&_.tiptap]:min-h-[22rem] [&_.tiptap]:outline-none [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_p]:mb-2">
+        {!content && !editor?.isFocused && (
+          <p className="pointer-events-none absolute text-zinc-400">Der generierte Text erscheint hier zur Bearbeitung.</p>
+        )}
+        <EditorContent editor={editor} />
+      </div>
+    </section>
+  );
+}
+
 export default function GeneratorForm() {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [result, setResult] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
-  const [presetTab, setPresetTab] = useState<string>("A1.1");
+  const [presetTab, setPresetTab] = useState<string>("Alle");
   const [model, setModel] = useState("gpt-4.1");
   const [presetSearch, setPresetSearch] = useState("");
-  const [presetLevelFilter, setPresetLevelFilter] = useState<string | null>(null);
   const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [presetTabPage, setPresetTabPage] = useState(1);
   const [workflowStep, setWorkflowStep] = useState<WorkflowStep>("generate");
@@ -1287,11 +1391,10 @@ export default function GeneratorForm() {
   const [enabledTextsorten, setEnabledTextsorten] = useState<string[]>(SORTED_TEXTSORTEN);
   const [disabledTextsorten, setDisabledTextsorten] = useState<string[]>(SORTED_DISABLED_TEXTSORTEN);
 
-  const filteredPresets = useMemo(() => {
-    if (!searchSubmitted) return null;
-    const q = presetSearch.trim().toLowerCase();
+  const displayedPresets = useMemo(() => {
+    const q = searchSubmitted ? presetSearch.trim().toLowerCase() : "";
     return PRESETS.filter((p) => {
-      const levelMatch = !presetLevelFilter || p.values.niveau === presetLevelFilter;
+      const levelMatch = presetTab === "Alle" || p.values.niveau === presetTab;
       const textMatch =
         !q ||
         p.title.toLowerCase().includes(q) ||
@@ -1301,21 +1404,20 @@ export default function GeneratorForm() {
         (p.values.zielgruppe ?? "").toLowerCase().includes(q);
       return levelMatch && textMatch;
     });
-  }, [searchSubmitted, presetSearch, presetLevelFilter]);
+  }, [presetTab, presetSearch, searchSubmitted]);
 
-  const tabPresets = useMemo(() => PRESETS.filter((preset) => preset.values.niveau === presetTab), [presetTab]);
-  const totalTabPages = Math.max(1, Math.ceil(tabPresets.length / PRESETS_PER_TAB_PAGE));
-  const clampedTabPage = Math.min(presetTabPage, totalTabPages);
-  const pagedTabPresets = useMemo(() => {
-    const start = (clampedTabPage - 1) * PRESETS_PER_TAB_PAGE;
-    return tabPresets.slice(start, start + PRESETS_PER_TAB_PAGE);
-  }, [tabPresets, clampedTabPage]);
-  const tabPresetPlaceholderCount = PRESETS_PER_TAB_PAGE - pagedTabPresets.length;
+  const totalPresetPages = Math.max(1, Math.ceil(displayedPresets.length / PRESETS_PER_TAB_PAGE));
+  const clampedPresetPage = Math.min(presetTabPage, totalPresetPages);
+  const pagedPresets = useMemo(() => {
+    const start = (clampedPresetPage - 1) * PRESETS_PER_TAB_PAGE;
+    return displayedPresets.slice(start, start + PRESETS_PER_TAB_PAGE);
+  }, [displayedPresets, clampedPresetPage]);
+  const presetPlaceholderCount = PRESETS_PER_TAB_PAGE - pagedPresets.length;
 
   function clearPresetFilter() {
     setPresetSearch("");
-    setPresetLevelFilter(null);
     setSearchSubmitted(false);
+    setPresetTabPage(1);
   }
 
   const isDialogLike = form.textsorte === "Dialog" || form.textsorte === "Interview";
@@ -1511,31 +1613,27 @@ export default function GeneratorForm() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="xl:flex xl:items-start">
         <AppSidebar
-          activeHref="/"
+          activeHref="/generator"
           enabledTextsorten={enabledTextsorten}
           disabledTextsorten={disabledTextsorten}
         />
 
         <div className="flex-1">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-              <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">DaZ-Lesetextgenerator</h1>
-              <Link
-                href="/library"
-                className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                Zur Textbibliothek
-              </Link>
-            </div>
-
             <section className="radius-section-card mb-8 border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="grid gap-2 sm:grid-cols-4">
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                <Astroid className="h-6 w-6" aria-hidden="true" />
+                Generator
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("generate")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
                     workflowStep === "generate"
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   }`}
                 >
@@ -1545,9 +1643,9 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("continue")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
                     workflowStep === "continue"
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   }`}
                 >
@@ -1557,9 +1655,9 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("tasks")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
                     workflowStep === "tasks"
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   }`}
                 >
@@ -1569,9 +1667,9 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("audio")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
                     workflowStep === "audio"
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                      ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                   }`}
                 >
@@ -1585,186 +1683,148 @@ export default function GeneratorForm() {
               <div className="space-y-8">
 
             {workflowStep === "generate" ? (
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form id="generate-form" onSubmit={handleSubmit} className="space-y-8">
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                <FileCode className="h-5 w-5" aria-hidden="true" />
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <FileStack className="h-5 w-5" aria-hidden="true" />
                 Presets
               </h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
-              <div className="mt-4 flex gap-2">
-                <div className="flex flex-1 gap-2">
-                  <input
-                    type="text"
-                    value={presetSearch}
-                    onChange={(e) => { setPresetSearch(e.target.value); if (!e.target.value && !presetLevelFilter) setSearchSubmitted(false); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setSearchSubmitted(true); } }}
-                    placeholder="Thema, Zielgruppe, Stichwort…"
-                    className="flex-1 radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                  />
-                  <div className="flex gap-2">
-                    {NIVEAUS.map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => { setPresetLevelFilter(presetLevelFilter === n ? null : n); setSearchSubmitted(true); }}
-                        className={`radius-single-line border px-2.5 py-2 text-xs font-medium transition-colors ${
-                          presetLevelFilter === n
-                            ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                            : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button type="button" onClick={() => setSearchSubmitted(true)} className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              <div className="mt-4 grid grid-cols-7 gap-2">
+                <input
+                  type="text"
+                  value={presetSearch}
+                  onChange={(e) => { setPresetSearch(e.target.value); if (!e.target.value) setSearchSubmitted(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setSearchSubmitted(true); } }}
+                  placeholder="Thema, Zielgruppe, Stichwort…"
+                  className="col-span-5 radius-single-line border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+                <button type="button" onClick={() => setSearchSubmitted(true)} className={`${searchSubmitted ? "col-span-1" : "col-span-2"} radius-single-line border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300`}>
                   Suchen
                 </button>
-                {(searchSubmitted || presetLevelFilter) && (
-                  <button type="button" onClick={clearPresetFilter} className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-                    ✕ Filter
+                {searchSubmitted && (
+                  <button type="button" onClick={clearPresetFilter} className="col-span-1 radius-single-line border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-500 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+                    ✕
                   </button>
                 )}
               </div>
 
-              {filteredPresets !== null ? (
-                <>
-                  <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{filteredPresets.length} Ergebnis{filteredPresets.length !== 1 ? "se" : ""}</p>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    {filteredPresets.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => applyPreset(preset)}
-                        className={`radius-card border p-4 text-left transition-colors ${
+              <div
+                className="mt-4 grid gap-2"
+                style={{ gridTemplateColumns: `repeat(${NIVEAUS.length + 1}, minmax(0, 1fr))` }}
+                role="tablist"
+                aria-label="Preset-Niveaus"
+              >
+                {(["Alle", ...NIVEAUS] as string[]).map((niveau) => (
+                  <button
+                    key={niveau}
+                    type="button"
+                    onClick={() => {
+                      setPresetTab(niveau);
+                      setPresetTabPage(1);
+                    }}
+                    id={`preset-tab-${niveau}`}
+                    role="tab"
+                    aria-selected={presetTab === niveau}
+                    aria-controls={`preset-panel-${niveau}`}
+                    tabIndex={presetTab === niveau ? 0 : -1}
+                    className={`w-full radius-single-line border py-2 text-base font-medium transition-colors text-center ${
+                      presetTab === niveau
+                        ? "border-sky-500 bg-sky-50 text-sky-700 dark:border-accent-700 dark:bg-accent-950 dark:text-accent-300"
+                        : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    }`}
+                  >
+                    {niveau}
+                  </button>
+                ))}
+              </div>
+              <div
+                id={`preset-panel-${presetTab}`}
+                className="mt-4 grid gap-3 md:grid-cols-2"
+                role="tabpanel"
+                aria-labelledby={`preset-tab-${presetTab}`}
+              >
+                {pagedPresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className={`radius-single-line border text-left transition-colors overflow-hidden ${
+                      activePresetId === preset.id
+                        ? "border-sky-500 bg-sky-50 text-sky-800 dark:bg-accent-950 dark:text-accent-200"
+                        : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
+                  >
+                    <div className={`flex items-center gap-2 px-4 pt-2 pb-2 ${activePresetId === preset.id ? "bg-sky-100 dark:bg-accent-900" : "bg-zinc-100 dark:bg-zinc-800"}`}>
+                      <span
+                        className={`shrink-0 inline-flex items-center radius-single-line border px-2 py-0.5 text-[11px] font-semibold tracking-wide ${
                           activePresetId === preset.id
-                            ? "border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
-                            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                            ? "border-blue-300 bg-white text-blue-800 dark:border-blue-700 dark:bg-blue-800 dark:text-blue-200"
+                            : "border-zinc-300 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
                         }`}
                       >
-                        <div className="flex items-start gap-2">
-                          <span
-                            className={`inline-flex items-center radius-single-line border px-2 py-0.5 text-[11px] font-semibold tracking-wide ${
-                              activePresetId === preset.id
-                                ? "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                                : "border-zinc-300 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                            }`}
-                          >
-                            {preset.values.niveau ?? "-"}
-                          </span>
-                          <div className="text-sm font-semibold">{getPresetDisplayTitle(preset)}</div>
-                        </div>
-                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{preset.summary}</div>
-                        <div className="mt-3 text-xs uppercase tracking-wide opacity-70">{preset.values.textsorte} · {preset.values.zielgruppe}</div>
-                      </button>
-                    ))}
-                    {filteredPresets.length === 0 && (
-                      <p className="col-span-2 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">Keine Presets gefunden.</p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-4 flex gap-1 border-b border-zinc-200 dark:border-zinc-700">
-                    {NIVEAUS.map((niveau) => (
-                      <button
-                        key={niveau}
-                        type="button"
-                        onClick={() => {
-                          setPresetTab(niveau);
-                          setPresetTabPage(1);
-                        }}
-                        className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                          presetTab === niveau
-                            ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                            : "border-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                        }`}
-                      >
-                        {niveau}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {pagedTabPresets.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => applyPreset(preset)}
-                        className={`radius-card border p-4 text-left transition-colors ${
-                          activePresetId === preset.id
-                            ? "border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
-                            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <span
-                            className={`inline-flex items-center radius-single-line border px-2 py-0.5 text-[11px] font-semibold tracking-wide ${
-                              activePresetId === preset.id
-                                ? "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                                : "border-zinc-300 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                            }`}
-                          >
-                            {preset.values.niveau ?? "-"}
-                          </span>
-                          <div className="text-sm font-semibold">{getPresetDisplayTitle(preset)}</div>
-                        </div>
-                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{preset.summary}</div>
-                        <div className="mt-3 text-xs uppercase tracking-wide opacity-70">{preset.values.textsorte} · {preset.values.zielgruppe}</div>
-                      </button>
-                    ))}
-                    {Array.from({ length: tabPresetPlaceholderCount }).map((_, index) => (
-                      <div
-                        key={`preset-placeholder-${clampedTabPage}-${index}`}
-                        aria-hidden="true"
-                        className="radius-card border border-transparent p-4 opacity-0 pointer-events-none select-none"
-                      />
-                    ))}
-                  </div>
-                  {totalTabPages > 1 && (
-                    <div className="mt-4 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                      <button
-                        type="button"
-                        onClick={() => setPresetTabPage((page) => Math.max(1, page - 1))}
-                        disabled={clampedTabPage === 1}
-                        className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 transition-colors hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      >
-                        Zurück
-                      </button>
-                      <span>Seite {clampedTabPage} von {totalTabPages}</span>
-                      <button
-                        type="button"
-                        onClick={() => setPresetTabPage((page) => Math.min(totalTabPages, page + 1))}
-                        disabled={clampedTabPage === totalTabPages}
-                        className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 transition-colors hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      >
-                        Weiter
-                      </button>
+                        {preset.values.niveau ?? "-"}
+                      </span>
+                      <div className="text-base font-semibold leading-snug">{getPresetDisplayTitle(preset)}</div>
                     </div>
-                  )}
-                </>
+                    <div className="px-4 pt-3 pb-4">
+                      <div className="text-base leading-snug text-zinc-600 dark:text-zinc-300">{preset.summary}</div>
+                      <div className="mt-3 text-xs uppercase tracking-wide opacity-70">{preset.values.textsorte} · {preset.values.zielgruppe}</div>
+                    </div>
+                  </button>
+                ))}
+                {displayedPresets.length === 0 && (
+                  <p className="col-span-2 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">Keine Presets gefunden.</p>
+                )}
+                {pagedPresets.length > 0 && Array.from({ length: presetPlaceholderCount }).map((_, index) => (
+                  <div
+                    key={`preset-placeholder-${clampedPresetPage}-${index}`}
+                    aria-hidden="true"
+                    className="radius-single-line border border-transparent p-4 opacity-0 pointer-events-none select-none"
+                  />
+                ))}
+              </div>
+              {totalPresetPages > 1 && (
+                <div className="mt-4 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                  <button
+                    type="button"
+                    onClick={() => setPresetTabPage((page) => Math.max(1, page - 1))}
+                    disabled={clampedPresetPage === 1}
+                    className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 transition-colors hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  >
+                    Zurück
+                  </button>
+                  <span>Seite {clampedPresetPage} von {totalPresetPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPresetTabPage((page) => Math.min(totalPresetPages, page + 1))}
+                    disabled={clampedPresetPage === totalPresetPages}
+                    className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-zinc-700 transition-colors hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  >
+                    Weiter
+                  </button>
+                </div>
               )}
             </section>
 
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
                 <BrainCircuit className="h-5 w-5" aria-hidden="true" />
                 Modell
               </h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-4 grid grid-cols-4 gap-2">
                 {MODEL_OPTIONS.map((option) => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() => setModel(option.id)}
-                    className={`radius-single-line border px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`radius-single-line border px-3 py-2 text-base font-medium transition-colors ${
                       model === option.id
                         ? option.provider === "anthropic"
                           ? "border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
-                          : "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                          : "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                         : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                     }`}
                   >
@@ -1774,15 +1834,15 @@ export default function GeneratorForm() {
               </div>
             </section>
 
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <section id="section-niveau" className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
                 <SlidersVertical className="h-5 w-5" aria-hidden="true" />
-                Basisdaten
+                Niveau und Textsorte
               </h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-5 space-y-5">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Niveau <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Niveau <span className="text-red-500">*</span></label>
                   <div className="grid grid-cols-6 gap-2">
                     {NIVEAUS.map((niveau) => (
                       <button
@@ -1791,11 +1851,11 @@ export default function GeneratorForm() {
                         onClick={() => updateField("niveau", niveau)}
                         className={`radius-single-line border px-3 py-2.5 text-center transition-colors ${
                           form.niveau === niveau
-                            ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                            ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                             : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                         }`}
                       >
-                        <div className="text-sm font-semibold">{niveau}</div>
+                        <div className="text-base font-semibold">{niveau}</div>
                       </button>
                     ))}
                   </div>
@@ -1803,11 +1863,11 @@ export default function GeneratorForm() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Textsorte <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Textsorte <span className="text-red-500">*</span></label>
                   <select
                     value={form.textsorte}
                     onChange={(event) => updateField("textsorte", event.target.value as Textsorte)}
-                    className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   >
                     {enabledTextsorten.map((textsorte) => (
                       <option key={textsorte} value={textsorte}>{textsorte}</option>
@@ -1821,64 +1881,70 @@ export default function GeneratorForm() {
               </div>
             </section>
 
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Inhalt und Kontext</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+            <section id="section-inhalt" className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <CirclePile className="h-5 w-5" aria-hidden="true" />
+                Inhalt und Kontext
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Thema <span className="text-red-500">*</span></label>
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Thema <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={form.thema}
                     onChange={(event) => updateField("thema", event.target.value)}
                     placeholder="z. B. Spitalaufnahme, Wohnungssuche, erste Tage im neuen Job"
                     required
-                    className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Themendetails</label>
-                  <textarea value={form.themendetails} onChange={(event) => updateField("themendetails", event.target.value)} rows={3} placeholder="Konkrete Aspekte, Plotpunkte, Eckdaten oder Übersteuerungen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Themendetails</label>
+                  <textarea value={form.themendetails} onChange={(event) => updateField("themendetails", event.target.value)} rows={3} placeholder="Konkrete Aspekte, Plotpunkte, Eckdaten oder Übersteuerungen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Zielgruppe</label>
-                  <select value={form.zielgruppe} onChange={(event) => updateField("zielgruppe", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Zielgruppe</label>
+                  <select value={form.zielgruppe} onChange={(event) => updateField("zielgruppe", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {ZIELGRUPPEN.map((zielgruppe) => <option key={zielgruppe} value={zielgruppe}>{zielgruppe}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Setting</label>
-                  <input type="text" value={form.setting} onChange={(event) => updateField("setting", event.target.value)} placeholder="z. B. Zürich, kleines Dorf in den Alpen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Setting</label>
+                  <input type="text" value={form.setting} onChange={(event) => updateField("setting", event.target.value)} placeholder="z. B. Zürich, kleines Dorf in den Alpen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Tonalität</label>
-                  <select value={form.tonalitaet} onChange={(event) => updateField("tonalitaet", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Tonalität</label>
+                  <select value={form.tonalitaet} onChange={(event) => updateField("tonalitaet", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {TONALITAETEN.map((tonalitaet) => <option key={tonalitaet} value={tonalitaet}>{tonalitaet}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Kulturraum</label>
-                  <select value={form.kulturraum} onChange={(event) => updateField("kulturraum", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Kulturraum</label>
+                  <select value={form.kulturraum} onChange={(event) => updateField("kulturraum", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {KULTURRAEUME.map((kulturraum) => <option key={kulturraum} value={kulturraum}>{kulturraum}</option>)}
                   </select>
                 </div>
               </div>
             </section>
 
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Perspektive und Ansprache</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+            <section id="section-perspektive" className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <View className="h-5 w-5" aria-hidden="true" />
+                Perspektive und Ansprache
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Erzählperspektive</label>
-                  <select value={form.erzaehlperspektive} onChange={(event) => updateField("erzaehlperspektive", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Erzählperspektive</label>
+                  <select value={form.erzaehlperspektive} onChange={(event) => updateField("erzaehlperspektive", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {ERZAEHLPERSPEKTIVEN.map((value) => <option key={value} value={value}>{value}</option>)}
                   </select>
                   <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Default für {form.textsorte}: {textsortenDefaults.perspective}</p>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Leseransprache</label>
-                  <select value={form.leseransprache} onChange={(event) => updateField("leseransprache", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Leseransprache</label>
+                  <select value={form.leseransprache} onChange={(event) => updateField("leseransprache", event.target.value)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {LESERANSPRACHEN.map((value) => <option key={value} value={value}>{value}</option>)}
                   </select>
                   <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Default für {form.textsorte}: {textsortenDefaults.address}</p>
@@ -1886,44 +1952,50 @@ export default function GeneratorForm() {
               </div>
             </section>
 
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Didaktische Steuerung</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+            <section id="section-didaktik" className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <Milestone className="h-5 w-5" aria-hidden="true" />
+                Didaktische Steuerung
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Lernschwerpunkt</label>
-                  <input type="text" value={form.lernschwerpunkt} onChange={(event) => updateField("lernschwerpunkt", event.target.value)} placeholder="z. B. Perfekt, Modalverben, Relativsätze" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Lernschwerpunkt</label>
+                  <input type="text" value={form.lernschwerpunkt} onChange={(event) => updateField("lernschwerpunkt", event.target.value)} placeholder="z. B. Perfekt, Modalverben, Relativsätze" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Pflichtwortschatz</label>
-                  <textarea value={form.pflichtwortschatz} onChange={(event) => updateField("pflichtwortschatz", event.target.value)} rows={4} placeholder="Ein Wort pro Zeile oder durch Kommas getrennt" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Pflichtwortschatz</label>
+                  <textarea value={form.pflichtwortschatz} onChange={(event) => updateField("pflichtwortschatz", event.target.value)} rows={4} placeholder="Ein Wort pro Zeile oder durch Kommas getrennt" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Tabuwortschatz</label>
-                  <textarea value={form.tabuwortschatz} onChange={(event) => updateField("tabuwortschatz", event.target.value)} rows={4} placeholder="Wörter oder Wendungen, die nicht vorkommen dürfen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Tabuwortschatz</label>
+                  <textarea value={form.tabuwortschatz} onChange={(event) => updateField("tabuwortschatz", event.target.value)} rows={4} placeholder="Wörter oder Wendungen, die nicht vorkommen dürfen" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Personen</label>
-                  <textarea value={form.personen} onChange={(event) => updateField("personen", event.target.value)} rows={3} placeholder="z. B. Anna – Patientin, Herr Meier – Pflegefachperson" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Personen</label>
+                  <textarea value={form.personen} onChange={(event) => updateField("personen", event.target.value)} rows={3} placeholder="z. B. Anna – Patientin, Herr Meier – Pflegefachperson" className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
               </div>
             </section>
 
-            <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Umfang und Ausgabe</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+            <section id="section-umfang" className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <PencilRuler className="h-5 w-5" aria-hidden="true" />
+                Umfang und Ausgabe
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-5 grid gap-5 md:grid-cols-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Wortzahl</label>
-                  <input type="number" min={1} value={form.wortzahl} onChange={(event) => updateField("wortzahl", event.target.value)} placeholder={String(NIVEAU_LIMITS[form.niveau].defaultWords)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Wortzahl</label>
+                  <input type="number" min={1} value={form.wortzahl} onChange={(event) => updateField("wortzahl", event.target.value)} placeholder={String(NIVEAU_LIMITS[form.niveau].defaultWords)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Absatzzahl</label>
-                  <input type="number" min={1} value={form.absatzzahl} onChange={(event) => updateField("absatzzahl", event.target.value)} placeholder={String(NIVEAU_LIMITS[form.niveau].defaultParagraphs)} disabled={isDialogLike} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Absatzzahl</label>
+                  <input type="number" min={1} value={form.absatzzahl} onChange={(event) => updateField("absatzzahl", event.target.value)} placeholder={String(NIVEAU_LIMITS[form.niveau].defaultParagraphs)} disabled={isDialogLike} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100" />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Glossar</label>
-                  <select value={form.glossar} onChange={(event) => updateField("glossar", event.target.value as GlossarOption)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+                  <label className="mb-2 block text-base font-medium text-zinc-700 dark:text-zinc-300">Glossar</label>
+                  <select value={form.glossar} onChange={(event) => updateField("glossar", event.target.value as GlossarOption)} className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
                     {GLOSSAR_OPTIONEN.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </div>
@@ -1931,18 +2003,14 @@ export default function GeneratorForm() {
               {isDialogLike && <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Für Dialog und Interview gilt die Absatzzahl nicht. Der Generator richtet die Länge am natürlichen Gesprächsverlauf aus.</p>}
             </section>
 
-            {conflictMessage && <div className="radius-card border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">{conflictMessage}</div>}
+            {conflictMessage && <div className="radius-card border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:text-[#9AA180] dark:border-accent-800 dark:bg-accent-950 dark:text-accent-200">{conflictMessage}</div>}
             {error && <div className="radius-card border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">{error}</div>}
-
-            <button type="submit" disabled={loading || !form.thema.trim()} className="w-full radius-single-line bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-900">
-              {loading ? "Generiere Text…" : "Text generieren"}
-            </button>
               </form>
             ) : workflowStep === "continue" ? (
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Bearbeitung</h2>
-                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                  <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Bearbeitung</h2>
+                  <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     <button
                       type="button"
@@ -1952,7 +2020,7 @@ export default function GeneratorForm() {
                       }}
                       className={`radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
                         processingAction === "redigieren"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                          ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                           : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                       }`}
                     >
@@ -1963,7 +2031,7 @@ export default function GeneratorForm() {
                       onClick={() => setProcessingAction("kuerzen")}
                       className={`radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
                         processingAction === "kuerzen"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                          ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                           : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                       }`}
                     >
@@ -1974,7 +2042,7 @@ export default function GeneratorForm() {
                       onClick={() => setProcessingAction("verlaengern")}
                       className={`radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
                         processingAction === "verlaengern"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                          ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                           : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                       }`}
                     >
@@ -1984,23 +2052,16 @@ export default function GeneratorForm() {
                 </section>
 
                 {processingAction === "redigieren" && (
-                  <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text redigieren</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
-                    <textarea
-                      value={processingText}
-                      onChange={(event) => setProcessingText(event.target.value)}
-                      rows={18}
-                      placeholder="Der generierte Text erscheint hier zur Bearbeitung."
-                      className="mt-4 w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                    />
-                  </section>
+                  <RedigiertEditor
+                    content={processingText}
+                    onChange={setProcessingText}
+                  />
                 )}
 
                 {processingAction === "kuerzen" && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text kürzen</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Text kürzen</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
                     <div className="mt-5 space-y-4">
                       <textarea
                         value={getEditableResultText(result)}
@@ -2037,8 +2098,8 @@ export default function GeneratorForm() {
 
                 {processingAction === "verlaengern" && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Text verlängern</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Text verlängern</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
                     <div className="mt-5 space-y-4">
                       <textarea
                         value={getEditableResultText(result)}
@@ -2060,8 +2121,8 @@ export default function GeneratorForm() {
             ) : workflowStep === "audio" ? (
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Audio generieren</h2>
-                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                  <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Audio generieren</h2>
+                  <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
                   <p className="mt-5 text-sm text-zinc-600 dark:text-zinc-300">
                     Die Audio-Funktion wird im nächsten Schritt definiert. Die Oberfläche ist hier jetzt vorbereitet.
                   </p>
@@ -2070,8 +2131,8 @@ export default function GeneratorForm() {
             ) : (
               <div className="space-y-8">
                 <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Aufgaben erstellen</h2>
-                  <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                  <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Aufgaben erstellen</h2>
+                  <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
                   <div className="mt-5 space-y-6">
                     <div>
@@ -2084,7 +2145,7 @@ export default function GeneratorForm() {
                             onClick={() => setSelectedTaskFormats((current) => toggleArrayEntry(current, format.id))}
                             className={`radius-single-line border px-3 py-2 text-sm transition-colors ${
                               selectedTaskFormats.includes(format.id)
-                                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                                 : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                             }`}
                           >
@@ -2132,8 +2193,8 @@ export default function GeneratorForm() {
 
                 {selectedTaskFormats.includes("lueckentext") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Lückentext</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Lückentext</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
                     <div className="mt-5 space-y-6">
                       <div>
@@ -2213,7 +2274,7 @@ export default function GeneratorForm() {
                             onClick={() => setLueckentextConfig((current) => ({ ...current, mode: "all" }))}
                             className={`radius-single-line border px-3 py-2 text-sm ${
                               lueckentextConfig.mode === "all"
-                                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                                 : "border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                             }`}
                           >
@@ -2224,7 +2285,7 @@ export default function GeneratorForm() {
                             onClick={() => setLueckentextConfig((current) => ({ ...current, mode: "selection" }))}
                             className={`radius-single-line border px-3 py-2 text-sm ${
                               lueckentextConfig.mode === "selection"
-                                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                                 : "border-zinc-300 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                             }`}
                           >
@@ -2327,8 +2388,8 @@ export default function GeneratorForm() {
 
                 {selectedTaskFormats.includes("mcq") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">MCQ</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">MCQ</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <div>
@@ -2414,8 +2475,8 @@ export default function GeneratorForm() {
 
                 {selectedTaskFormats.includes("truefalse") && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Richtig/Falsch</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Richtig/Falsch</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <div>
@@ -2476,8 +2537,8 @@ export default function GeneratorForm() {
 
                 {(selectedTaskFormats.includes("satzpuzzle") || selectedTaskFormats.includes("textpuzzle") || selectedTaskFormats.includes("zuordnung") || selectedTaskFormats.includes("umformung") || selectedTaskFormats.includes("wfragen") || selectedTaskFormats.includes("stichwort")) && (
                   <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Weitere Formate</h2>
-                    <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+                    <h2 className="text-lg font-semibold text-sky-700 dark:text-[#9AA180]">Weitere Formate</h2>
+                    <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
                     <div className="mt-5 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                       {selectedTaskFormats.includes("satzpuzzle") && <p>Satzpuzzle: Wörter in richtige Reihenfolge bringen.</p>}
                       {selectedTaskFormats.includes("textpuzzle") && <p>Textpuzzle: Absätze ordnen.</p>}
@@ -2503,52 +2564,75 @@ export default function GeneratorForm() {
             )}
           </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+            {workflowStep === "generate" && (
+              <button
+                type="submit"
+                form="generate-form"
+                disabled={loading || !form.thema.trim()}
+                className="w-full radius-single-line bg-sky-600 px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-sky-700 disabled:bg-sky-300 dark:disabled:bg-accent-900"
+              >
+                {loading ? "Generiere Text…" : "Text generieren"}
+              </button>
+            )}
             <div className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Aktive Defaults</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]">
+                <Settings2 className="h-5 w-5" aria-hidden="true" />
+                Aktive Einstellungen
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
               <div className="mt-4 overflow-hidden radius-card border border-zinc-200 dark:border-zinc-800">
-                <table className="w-full border-collapse text-sm text-zinc-600 dark:text-zinc-300">
+                <table className="w-full border-collapse text-base text-zinc-600 dark:text-zinc-300">
                   <tbody>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                      <th scope="row" className="w-2/5 bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">Textsorte</th>
-                      <td className="px-3 py-2">{form.textsorte}</td>
-                    </tr>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                      <th scope="row" className="bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">Perspektive</th>
-                      <td className="px-3 py-2">{textsortenDefaults.perspective}</td>
-                    </tr>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                      <th scope="row" className="bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">Leseransprache</th>
-                      <td className="px-3 py-2">{textsortenDefaults.address}</td>
-                    </tr>
-                    <tr>
-                      <th scope="row" className="bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">Tonalität</th>
-                      <td className="px-3 py-2">{textsortenDefaults.tone}</td>
-                    </tr>
+                    {([
+                      ["Niveau", form.niveau],
+                      ["Thema", form.thema || "—"],
+                      ["Textsorte", form.textsorte],
+                      ["Perspektive", form.erzaehlperspektive !== "textsortennatürlich" ? form.erzaehlperspektive : textsortenDefaults.perspective],
+                      ["Leseransprache", form.leseransprache !== "textsortennatürlich" ? form.leseransprache : textsortenDefaults.address],
+                      ["Tonalität", form.tonalitaet !== "textsortennatürlich" ? form.tonalitaet : textsortenDefaults.tone],
+                      ["Zielgruppe", form.zielgruppe],
+                      ["Setting", form.setting],
+                      ["Kulturraum", form.kulturraum],
+                      ["Wortzahl", form.wortzahl || `${NIVEAU_LIMITS[form.niveau]?.defaultWords ?? "—"} (Standard)`],
+                      ["Absatzzahl", form.absatzzahl || `${NIVEAU_LIMITS[form.niveau]?.defaultParagraphs ?? "—"} (Standard)`],
+                      ["Glossar", form.glossar],
+                      form.lernschwerpunkt ? ["Lernschwerpunkt", form.lernschwerpunkt] : null,
+                      form.themendetails ? ["Themendetails", form.themendetails] : null,
+                      form.pflichtwortschatz ? ["Pflichtwortschatz", form.pflichtwortschatz] : null,
+                      form.tabuwortschatz ? ["Tabuwortschatz", form.tabuwortschatz] : null,
+                      form.personen ? ["Personen", form.personen] : null,
+                    ] as ([string, string] | null)[]).filter(Boolean).map(([label, value], index, arr) => (
+                      <tr key={label} className={index < arr.length - 1 ? "border-b border-zinc-200 dark:border-zinc-800" : ""}>
+                        <th scope="row" className="w-2/5 bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 align-top dark:bg-zinc-900 dark:text-zinc-100">
+                          <a href={`#${LABEL_SECTION_MAP[label] ?? ""}`} className="hover:text-sky-700 dark:hover:text-accent-300 transition-colors">{label}</a>
+                        </th>
+                        <td className="px-3 py-2 break-words">{value}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
 
             <div className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Ergebnis</h2>
-              <div className="mt-3 flex"><div className="w-20 border-b-2 border-blue-500" /><div className="flex-1 border-b border-zinc-200 dark:border-zinc-700" /></div>
-              {!result && !loading && <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">Der generierte Text erscheint hier als strukturierte Ausgabe mit QA-Signalen.</p>}
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-sky-700 dark:text-[#9AA180]"><TextAlignStart className="h-5 w-5" aria-hidden="true" />Ergebnis</h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
+              {!result && !loading && <p className="mt-4 text-base text-zinc-500 dark:text-zinc-400">Der generierte Text erscheint hier als strukturierte Ausgabe mit QA-Signalen.</p>}
               {loading && !result && (
                 <div className="mt-4 radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                  <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                  <div className="flex items-center gap-2 text-base text-zinc-500 dark:text-zinc-400">
                     <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500" />
-                    Generiere Entwurf und Reparaturfassung…
+                    {model === "qwen3.5-plus" ? "Generiere Text…" : "Generiere Entwurf und Reparaturfassung…"}
                   </div>
                 </div>
               )}
               {result && (
                 <div className="mt-4 space-y-4">
                   <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{result.title}</h3>
-                    <p className="mt-2 text-sm italic text-zinc-600 dark:text-zinc-300">{result.teaser}</p>
-                    <div className="prose prose-zinc mt-4 max-w-none text-sm dark:prose-invert">
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{result.title}</h3>
+                    <p className="mt-2 text-base italic text-zinc-600 dark:text-zinc-300">{result.teaser}</p>
+                    <div className="prose prose-zinc mt-4 max-w-none text-base dark:prose-invert">
                       {result.paragraphs.map((paragraph, index) => (
                         <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
                       ))}
@@ -2557,8 +2641,8 @@ export default function GeneratorForm() {
 
                   {result.glossary.length > 0 && (
                     <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                      <h4 className="text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">Glossar</h4>
-                      <dl className="mt-3 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                      <h4 className="text-base font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">Glossar</h4>
+                      <dl className="mt-3 space-y-3 text-base text-zinc-700 dark:text-zinc-300">
                         {result.glossary.map((item) => (
                           <div key={item.lemma}>
                             <dt className="font-semibold text-zinc-900 dark:text-zinc-50">{item.lemma}</dt>
@@ -2570,14 +2654,14 @@ export default function GeneratorForm() {
                   )}
 
                   <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h4 className="text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">QA</h4>
-                    <dl className="mt-3 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
+                    <h4 className="text-base font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">QA</h4>
+                    <dl className="mt-3 space-y-3 text-base text-zinc-600 dark:text-zinc-300">
                       <div><dt className="font-medium text-zinc-800 dark:text-zinc-100">Wörter</dt><dd>{result.qa.wordCount}</dd></div>
                       <div><dt className="font-medium text-zinc-800 dark:text-zinc-100">Absätze</dt><dd>{result.qa.paragraphCount}</dd></div>
                       <div><dt className="font-medium text-zinc-800 dark:text-zinc-100">Perspektive</dt><dd>{result.qa.perspective}</dd></div>
                       <div><dt className="font-medium text-zinc-800 dark:text-zinc-100">Ansprache</dt><dd>{result.qa.address}</dd></div>
                     </dl>
-                    <div className="mt-4 space-y-3 text-sm">
+                    <div className="mt-4 space-y-3 text-base">
                       <div>
                         <div className="font-medium text-zinc-900 dark:text-zinc-50">Verwendeter Pflichtwortschatz</div>
                         <div className="mt-1 text-zinc-600 dark:text-zinc-300">{result.qa.mandatoryWordsUsed.length > 0 ? result.qa.mandatoryWordsUsed.join(", ") : "keine"}</div>
@@ -2597,7 +2681,7 @@ export default function GeneratorForm() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 text-xs">
+                  <div className="flex gap-3 text-base">
                     <button type="button" onClick={() => navigator.clipboard.writeText(formatResult(result))} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Kopieren</button>
                     <button type="button" onClick={() => { setResult(null); setTaskResult(null); setTasksError(""); }} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Leeren</button>
                   </div>
@@ -2607,9 +2691,9 @@ export default function GeneratorForm() {
               {taskResult && (
                 <div className="mt-4 space-y-4">
                   <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{taskResult.worksheetTitle}</h3>
-                    <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{taskResult.tasks.length} Aufgaben generiert</p>
-                    <div className="mt-4 flex flex-wrap gap-3 text-xs">
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{taskResult.worksheetTitle}</h3>
+                    <p className="mt-2 text-base text-zinc-500 dark:text-zinc-400">{taskResult.tasks.length} Aufgaben generiert</p>
+                    <div className="mt-4 flex flex-wrap gap-3 text-base">
                       <button
                         type="button"
                         onClick={() => navigator.clipboard.writeText(formatTaskWorksheet(taskResult))}
@@ -2645,12 +2729,12 @@ export default function GeneratorForm() {
                     {taskResult.tasks.map((task, index) => (
                       <div key={task.id} className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
                         <div className="flex items-center justify-between gap-3">
-                          <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{index + 1}. {task.instruction}</h4>
-                          <span className="radius-single-line border border-zinc-300 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{getTaskFormatLabel(task.format)}</span>
+                          <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{index + 1}. {task.instruction}</h4>
+                          <span className="radius-single-line border border-zinc-300 px-2 py-0.5 text-base font-semibold uppercase tracking-wide text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{getTaskFormatLabel(task.format)}</span>
                         </div>
                         <TaskQuestionBody task={task} />
                         {!taskGlobalConfig.withSeparateSolutions && (
-                          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                          <div className="mt-4 rounded-md bg-zinc-50 p-3 text-base text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
                             <div className="font-medium text-zinc-900 dark:text-zinc-100">Lösung</div>
                             <div className="mt-1 whitespace-pre-wrap">{formatTaskAnswer(task.answer)}</div>
                             {task.explanation && <div className="mt-2 text-zinc-500 dark:text-zinc-400">{task.explanation}</div>}
@@ -2662,8 +2746,8 @@ export default function GeneratorForm() {
 
                   {taskGlobalConfig.withSeparateSolutions && (
                     <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                      <h4 className="text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">Lösungen</h4>
-                      <div className="mt-3 space-y-3 text-sm text-zinc-700 dark:text-zinc-300">
+                      <h4 className="text-base font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">Lösungen</h4>
+                      <div className="mt-3 space-y-3 text-base text-zinc-700 dark:text-zinc-300">
                         {taskResult.tasks.map((task, index) => (
                           <div key={`${task.id}-solution`}>
                             <div className="font-medium text-zinc-900 dark:text-zinc-50">{index + 1}. {getTaskFormatLabel(task.format)}</div>

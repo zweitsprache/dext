@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${encodeSans.variable} h-full antialiased dark`}
+      className={`${encodeSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col"><Providers>{children}</Providers></body>

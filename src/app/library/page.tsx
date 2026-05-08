@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Check, Copy, FileCode } from "lucide-react";
+import { Check, Copy, Library } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
 
@@ -63,172 +62,14 @@ type LibraryApiResponse = {
   texts?: LibraryText[];
 };
 
-const DUMMY_TEXT_LIBRARY: LibraryText[] = [
-  {
-    id: "lib-b1-arbeitsvertrag",
-    title: "Arbeitsvertrag verstehen",
-    summary: "Sachtext zu Probezeit, Kündigungsfrist und zentralen Klauseln im Joballtag.",
-    teaser: "Sachtext zu Probezeit, Kündigungsfrist und zentralen Klauseln im Joballtag.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "B1.1",
-    textsorte: "Sachtext",
-    zielgruppe: "Arbeitssuchende",
-    tags: ["Arbeit", "Vertrag", "Rechte"],
-    updatedAt: "2026-05-03",
-  },
-  {
-    id: "lib-a2-wohnung-bericht",
-    title: "Wohnungsbesichtigung in Basel",
-    summary: "Bericht über eine Besichtigung mit Fokus auf Fragen an die Vermietung.",
-    teaser: "Bericht über eine Besichtigung mit Fokus auf Fragen an die Vermietung.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A2.1",
-    textsorte: "Bericht",
-    zielgruppe: "allgemein erwachsen",
-    tags: ["Wohnen", "Termin", "Fragen"],
-    updatedAt: "2026-04-28",
-  },
-  {
-    id: "lib-a1-spitalkantine",
-    title: "Mittagspause in der Spitalkantine",
-    summary: "Kurzer Dialog mit einfachen Bestellungen und höflichen Rückfragen.",
-    teaser: "Kurzer Dialog mit einfachen Bestellungen und höflichen Rückfragen.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A1.2",
-    textsorte: "Dialog",
-    zielgruppe: "Pflege",
-    tags: ["Spital", "Alltag", "Dialog"],
-    updatedAt: "2026-04-25",
-  },
-  {
-    id: "lib-b1-elternabend",
-    title: "Elternabend in der Primarschule",
-    summary: "Nachricht zur Organisation, Rollenverteilung und schulischen Erwartungen.",
-    teaser: "Nachricht zur Organisation, Rollenverteilung und schulischen Erwartungen.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "B1.2",
-    textsorte: "Nachricht",
-    zielgruppe: "Eltern in der Schule",
-    tags: ["Schule", "Eltern", "Planung"],
-    updatedAt: "2026-05-01",
-  },
-  {
-    id: "lib-a2-bewerbung-mail",
-    title: "Bewerbungsanfrage per Mail",
-    summary: "Brief/Mail mit klarer Struktur für Erstkontakt bei einer offenen Stelle.",
-    teaser: "Brief/Mail mit klarer Struktur für Erstkontakt bei einer offenen Stelle.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A2.2",
-    textsorte: "Brief / Mail",
-    zielgruppe: "Arbeitssuchende",
-    tags: ["Bewerbung", "Mail", "Formell"],
-    updatedAt: "2026-04-19",
-  },
-  {
-    id: "lib-a1-busausfall",
-    title: "Bus fällt aus",
-    summary: "Einfache Nachricht über eine Verspätung und alternative Verbindungen.",
-    teaser: "Einfache Nachricht über eine Verspätung und alternative Verbindungen.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A1.1",
-    textsorte: "Nachricht",
-    zielgruppe: "Integrationskurs",
-    tags: ["Verkehr", "Zeit", "Info"],
-    updatedAt: "2026-03-30",
-  },
-  {
-    id: "lib-b1-betriebsrat",
-    title: "Gespräch mit dem Betriebsrat",
-    summary: "Interview über Mitsprache, Beschwerden und Lösungswege im Betrieb.",
-    teaser: "Interview über Mitsprache, Beschwerden und Lösungswege im Betrieb.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "B1.1",
-    textsorte: "Interview",
-    zielgruppe: "Bau",
-    tags: ["Betrieb", "Rechte", "Interview"],
-    updatedAt: "2026-05-04",
-  },
-  {
-    id: "lib-a2-rezept-blog",
-    title: "Schnelles Abendessen nach der Arbeit",
-    summary: "Blogtext mit Reihenfolge, Zutaten und einfachen Küchenschritten.",
-    teaser: "Blogtext mit Reihenfolge, Zutaten und einfachen Küchenschritten.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A2.1",
-    textsorte: "Blog",
-    zielgruppe: "Gastronomie",
-    tags: ["Kochen", "Ablauf", "Blog"],
-    updatedAt: "2026-04-14",
-  },
-  {
-    id: "lib-b1-kommentar-kita",
-    title: "Kommentar zu Kita-Öffnungszeiten",
-    summary: "Kontroverser Kommentar mit Argumenten aus Sicht berufstätiger Eltern.",
-    teaser: "Kontroverser Kommentar mit Argumenten aus Sicht berufstätiger Eltern.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "B1.2",
-    textsorte: "Kommentar",
-    zielgruppe: "Eltern in der Schule",
-    tags: ["Familie", "Kommentar", "Argumente"],
-    updatedAt: "2026-04-22",
-  },
-  {
-    id: "lib-a2-portraet-koch",
-    title: "Porträt einer Chefköchin",
-    summary: "Porträt über Berufsweg, Teamarbeit und Sprachlernen im Restaurant.",
-    teaser: "Porträt über Berufsweg, Teamarbeit und Sprachlernen im Restaurant.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A2.2",
-    textsorte: "Porträt",
-    zielgruppe: "Gastronomie",
-    tags: ["Beruf", "Porträt", "Team"],
-    updatedAt: "2026-04-09",
-  },
-  {
-    id: "lib-a1-anleitung-anmeldung",
-    title: "Anmeldung beim Deutschkurs",
-    summary: "Anleitung mit Schritt-für-Schritt-Ablauf für Kursanmeldung und Unterlagen.",
-    teaser: "Anleitung mit Schritt-für-Schritt-Ablauf für Kursanmeldung und Unterlagen.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A1.2",
-    textsorte: "Anleitung",
-    zielgruppe: "Integrationskurs",
-    tags: ["Anmeldung", "Dokumente", "Kurs"],
-    updatedAt: "2026-03-18",
-  },
-  {
-    id: "lib-a1-erzaehlung-feierabend",
-    title: "Feierabend im neuen Quartier",
-    summary: "Einfache Erzählung über Wege, Begegnungen und kleine Routinen am Abend.",
-    teaser: "Einfache Erzählung über Wege, Begegnungen und kleine Routinen am Abend.",
-    paragraphs: [],
-    glossary: [],
-    niveau: "A1.1",
-    textsorte: "Erzählung",
-    zielgruppe: "allgemein erwachsen",
-    tags: ["Quartier", "Routine", "Erzählung"],
-    updatedAt: "2026-03-11",
-  },
-];
-
 function LibraryContent() {
   const searchParams = useSearchParams();
   const [librarySearch, setLibrarySearch] = useState("");
   const [libraryLevelFilter, setLibraryLevelFilter] = useState<string>("alle");
   const [libraryTypeFilter, setLibraryTypeFilter] = useState<string>("alle");
   const [libraryPage, setLibraryPage] = useState(1);
-  const [libraryTexts, setLibraryTexts] = useState<LibraryText[]>(DUMMY_TEXT_LIBRARY);
+  const [libraryTexts, setLibraryTexts] = useState<LibraryText[]>([]);
+  const [isLibraryLoading, setIsLibraryLoading] = useState(true);
   const [activeText, setActiveText] = useState<LibraryText | null>(null);
   const [copied, setCopied] = useState(false);
   const [enabledTextsorten, setEnabledTextsorten] = useState<string[]>(SORTED_TEXTSORTEN);
@@ -335,6 +176,10 @@ function LibraryContent() {
         setLibraryTexts(data.texts);
       } catch {
         // Keep static fallback if library endpoint is unavailable.
+      } finally {
+        if (isMounted) {
+          setIsLibraryLoading(false);
+        }
       }
     }
 
@@ -397,22 +242,12 @@ function LibraryContent() {
 
         <div className="flex-1">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
-              <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Textbibliothek</h1>
-              <Link
-                href="/"
-                className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                Zum Generator
-              </Link>
-            </div>
-
             <section className="radius-section-card border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                <FileCode className="h-5 w-5" aria-hidden="true" />
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                <Library className="h-6 w-6" aria-hidden="true" />
                 Bibliothek
               </h2>
-              <div className="mt-3 border-b border-zinc-200 dark:border-zinc-700" />
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
 
               <div className="mt-4 grid gap-3 lg:grid-cols-[1.4fr_0.8fr_0.8fr_auto]">
                 <input
@@ -420,12 +255,12 @@ function LibraryContent() {
                   value={librarySearch}
                   onChange={(event) => setLibrarySearch(event.target.value)}
                   placeholder="Titel, Zielgruppe, Tag suchen..."
-                  className="w-full radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                  className="w-full radius-single-line border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
                 <select
                   value={libraryLevelFilter}
                   onChange={(event) => setLibraryLevelFilter(event.target.value)}
-                  className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                  className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 >
                   <option value="alle">Alle Niveaus</option>
                   {NIVEAUS.map((niveau) => (
@@ -435,7 +270,7 @@ function LibraryContent() {
                 <select
                   value={libraryTypeFilter}
                   onChange={(event) => setLibraryTypeFilter(event.target.value)}
-                  className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                  className="w-full radius-single-line border border-zinc-300 bg-white px-3.5 py-2.5 text-base text-zinc-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 >
                   <option value="alle">Alle Textsorten</option>
                   {enabledTextsorten.map((textsorte) => (
@@ -452,63 +287,96 @@ function LibraryContent() {
                     setLibraryLevelFilter("alle");
                     setLibraryTypeFilter("alle");
                   }}
-                  className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  className="radius-single-line border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                 >
                   Zurücksetzen
                 </button>
               </div>
 
               <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-                {filteredLibraryTexts.length} Text{filteredLibraryTexts.length !== 1 ? "e" : ""} gefunden
+                {isLibraryLoading
+                  ? "Texte werden geladen..."
+                  : `${filteredLibraryTexts.length} Text${filteredLibraryTexts.length !== 1 ? "e" : ""} gefunden`}
               </p>
 
               <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {pagedLibraryTexts.map((item) => (
-                  <article
-                    key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setActiveText(item)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setActiveText(item);
-                      }
-                    }}
-                    className="radius-card cursor-pointer border border-zinc-300 bg-white p-4 text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="inline-flex items-center radius-single-line border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                        {item.niveau}
-                      </span>
-                      <span className="text-[11px] uppercase tracking-wide text-zinc-400">{item.textsorte}</span>
-                    </div>
-                    <div className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{item.title}</div>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{item.summary}</p>
-                    {item.linguisticSummary && (
-                      <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">
-                        <span className="font-semibold">Linguistik:</span> {item.linguisticSummary}
-                      </p>
-                    )}
-                    <div className="mt-3 text-xs uppercase tracking-wide opacity-70">{item.zielgruppe}</div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {item.tags.map((tag) => (
-                        <span key={`${item.id}-${tag}`} className="inline-flex items-center radius-single-line border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-3 text-[11px] text-zinc-400">Aktualisiert: {item.updatedAt}</div>
-                  </article>
-                ))}
-                {pagedLibraryTexts.length === 0 && (
+                {isLibraryLoading
+                  ? Array.from({ length: TEXT_LIBRARY_PER_PAGE }).map((_, index) => (
+                      <article
+                        key={`library-skeleton-${index}`}
+                        aria-hidden="true"
+                        className="radius-card border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden"
+                      >
+                        <div className="bg-zinc-100 px-4 pt-2 pb-2 dark:bg-zinc-800">
+                          <div className="flex items-center gap-2">
+                            <div className="h-5 w-14 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                            <div className="h-5 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          </div>
+                        </div>
+                        <div className="px-4 pt-3 pb-4">
+                          <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="h-4 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="mt-2 h-4 w-11/12 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="mt-3 h-3 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <div className="h-5 w-16 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                            <div className="h-5 w-20 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                            <div className="h-5 w-14 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                          </div>
+                          <div className="mt-3 h-3 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                        </div>
+                      </article>
+                    ))
+                  : pagedLibraryTexts.map((item) => (
+                      <article
+                        key={item.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setActiveText(item)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setActiveText(item);
+                          }
+                        }}
+                        className="radius-card cursor-pointer border border-zinc-300 bg-white text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 overflow-hidden"
+                      >
+                        <div className="bg-zinc-100 px-4 pt-2 pb-2 dark:bg-zinc-800">
+                          <div className="flex items-center gap-2">
+                            <span className="shrink-0 inline-flex items-center radius-single-line border border-zinc-300 bg-white px-2 py-0.5 text-[11px] font-semibold tracking-wide text-zinc-600 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
+                              {item.niveau}
+                            </span>
+                            <div className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">{item.title}</div>
+                          </div>
+                        </div>
+                        <div className="px-4 pt-3 pb-4">
+                          <div className="mb-1.5 text-[11px] uppercase tracking-wide text-zinc-400">{item.textsorte}</div>
+                          <p className="text-base leading-snug text-zinc-600 dark:text-zinc-300">{item.summary}</p>
+                          {item.linguisticSummary && (
+                            <p className="mt-2 text-base leading-snug text-zinc-600 dark:text-zinc-300">
+                              {item.linguisticSummary}
+                            </p>
+                          )}
+                          <div className="mt-3 text-xs uppercase tracking-wide opacity-70">{item.zielgruppe}</div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {item.tags.map((tag) => (
+                              <span key={`${item.id}-${tag}`} className="inline-flex items-center radius-single-line border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 text-[11px] text-zinc-400">Aktualisiert: {item.updatedAt}</div>
+                        </div>
+                      </article>
+                    ))}
+                {!isLibraryLoading && pagedLibraryTexts.length === 0 && (
                   <p className="md:col-span-2 xl:col-span-3 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">
                     Keine Texte für diese Filterkombination.
                   </p>
                 )}
               </div>
 
-              {totalLibraryPages > 1 && (
+              {!isLibraryLoading && totalLibraryPages > 1 && (
                 <div className="mt-4 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
                   <button
                     type="button"

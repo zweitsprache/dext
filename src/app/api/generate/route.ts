@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
-import { storeGeneratedText } from "@/lib/neon";
-import { FOCUS_MIN_LEVEL, LEVEL_LIMITS, LEVEL_RULES, NIVEAU_MERKMAL_LISTE } from "@/lib/ger-level-specs";
+import { getGerLevelSettings, storeGeneratedText } from "@/lib/neon";
+import { buildNiveauMerkmalListe, FOCUS_MIN_LEVEL, GER_LEVEL_ORDER, LEVEL_LIMITS, LEVEL_RULES, type GerLevel } from "@/lib/ger-level-specs";
 
 type ModelProvider = "anthropic" | "openai";
 
@@ -12,6 +12,7 @@ const MODEL_PROVIDERS: Record<string, ModelProvider> = {
   "gpt-4.1": "openai",
   "gpt-4o": "openai",
   "gpt-4o-mini": "openai",
+  "qwen3.5-plus": "openai",
 };
 
 type GenerateRequest = {
@@ -166,25 +167,17 @@ Regeln für dieses JSON:
 `;
 }
 
-function getCompactLevelRules(niveau: string): string {
-  const rules = LEVEL_RULES[niveau];
-  return `
-Kompakte Niveauregeln für ${niveau}
-- Erlaubt: ${rules.allowed.join(", ")}
-- Bevorzugt: ${rules.preferred.join(", ")}
-- Verboten: ${rules.forbidden.join(", ")}
-`;
-}
-
-function buildSystemPrompt(niveau: string, glossaryMode: string, dialogLike: boolean): string {
+function buildSystemPrompt(niveau: string, glossaryMode: string, dialogLike: boolean, niveauMerkmalListe: string, activeLevelPromptBlock: string): string {
   return `Rolle und Ziel
 Du bist Autor:in für didaktisch hochwertige Lesetexte im Bereich Deutsch als Zweitsprache (Erwachsene). Erzeuge einen flüssigen, authentischen und sprachlich korrekten Text auf dem vorgegebenen Niveau zum vorgegebenen Thema in der vorgegebenen Textsorte.
 Sakrosankte Regel: Verwende ausschliesslich die in der Niveau-Merkmal-Liste für das gewählte Niveau freigegebenen Strukturen (kumulativ). Höhere Strukturen sind verboten - auch dann, wenn sie inhaltlich schöner wären. Lieber den Inhalt umformulieren als das Niveau überschreiten.
 Orthografie: DE-CH (ss statt ß; CH-Lexik wie Spital, Velo, Tram, Billet, Tschüss, parkieren ist zulässig und erwünscht, sofern stimmig).
 
-${NIVEAU_MERKMAL_LISTE}
+${niveauMerkmalListe}
 
-${getCompactLevelRules(niveau)}
+Aktives Zielniveau
+${niveau}
+${activeLevelPromptBlock}
 
 Globale Qualitätskriterien
 - Flüssigkeit und Lesbarkeit: klare, natürliche Sätze; kein Telegrafstil, kein Schulbuch-Sound; stimmiger Rhythmus.
@@ -527,6 +520,33 @@ function analyzePayload(payload: StructuredText, input: Required<GenerateRequest
   };
 }
 
+async function generateWithQwen(apiKey: string, model: string, system: string, prompt: string): Promise<StructuredText> {
+  const response = await fetch("https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2600,
+      temperature: 0.4,
+      enable_thinking: false,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DashScope API error: ${response.status} ${errorText}`);
+  }
+  const data = await response.json() as any;
+  const text = data.choices?.[0]?.message?.content ?? "";
+  return parseJsonResponse(text);
+}
+
 async function generateWithAnthropic(client: Anthropic, model: string, system: string, prompt: string): Promise<StructuredText> {
   const response = await client.messages.create({
     model,
@@ -572,15 +592,26 @@ export async function POST(request: NextRequest) {
     let generateFn: (system: string, prompt: string) => Promise<StructuredText>;
 
     if (provider === "openai") {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        return new Response(JSON.stringify({ error: "OPENAI_API_KEY nicht konfiguriert" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
+      if (input.model === "qwen3.5-plus") {
+        const qwenApiKey = process.env.DASHSCOPE_API_KEY;
+        if (!qwenApiKey) {
+          return new Response(JSON.stringify({ error: "DASHSCOPE_API_KEY nicht konfiguriert" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        generateFn = (system, prompt) => generateWithQwen(qwenApiKey, input.model, system, prompt);
+      } else {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          return new Response(JSON.stringify({ error: "OPENAI_API_KEY nicht konfiguriert" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        const client = new OpenAI({ apiKey });
+        generateFn = (system, prompt) => generateWithOpenAI(client, input.model, system, prompt);
       }
-      const client = new OpenAI({ apiKey });
-      generateFn = (system, prompt) => generateWithOpenAI(client, input.model, system, prompt);
     } else {
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
@@ -594,16 +625,23 @@ export async function POST(request: NextRequest) {
     }
 
     const dialogLike = isDialogLike(input.textsorte);
-    const systemPrompt = buildSystemPrompt(input.niveau, input.glossar, dialogLike);
+    const gerLevelSettings = await getGerLevelSettings();
+    const niveauMerkmalListe = buildNiveauMerkmalListe(gerLevelSettings);
+    const activeLevelPromptBlock = GER_LEVEL_ORDER.includes(input.niveau as GerLevel)
+      ? gerLevelSettings[input.niveau as GerLevel]
+      : niveauMerkmalListe;
+    const systemPrompt = buildSystemPrompt(input.niveau, input.glossar, dialogLike, niveauMerkmalListe, activeLevelPromptBlock);
 
     const draft = await generateFn(systemPrompt, buildUserPrompt(input));
     const draftSummary = analyzePayload(draft, input);
-    const repaired = await generateFn(systemPrompt, buildRepairPrompt(input, draft, draftSummary));
-    const finalSummary = analyzePayload(repaired, input);
+    const finalPayload = input.model === "qwen3.5-plus"
+      ? draft
+      : await generateFn(systemPrompt, buildRepairPrompt(input, draft, draftSummary));
+    const finalSummary = analyzePayload(finalPayload, input);
 
     const payload: GenerationResponse = {
-      ...repaired,
-      glossary: input.glossar === "nein" ? [] : repaired.glossary,
+      ...finalPayload,
+      glossary: input.glossar === "nein" ? [] : finalPayload.glossary,
       qa: {
         wordCount: finalSummary.wordCount,
         paragraphCount: finalSummary.paragraphCount,

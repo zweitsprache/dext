@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { buildNiveauMerkmalListe, GER_LEVEL_ORDER, LEVEL_PROMPT_BLOCKS, type GerLevel, type GerLevelPromptSettings } from "@/lib/ger-level-specs";
 import { DEFAULT_TEXTSORTEN, type TextsorteOption } from "@/lib/textsorten";
 
 type StoredTextParams = {
@@ -47,9 +48,17 @@ export type LibraryTextItem = {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __texgeneratorNeonSchemaReady: boolean | undefined;
+  var __texgeneratorNeonSchemaVersion: number | undefined;
   // eslint-disable-next-line no-var
   var __texgeneratorTextsortenSeeded: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __texgeneratorGerSettingsSeeded: boolean | undefined;
+}
+
+const NEON_SCHEMA_VERSION = 2;
+
+function getDefaultGerLevelSettings(): GerLevelPromptSettings {
+  return { ...LEVEL_PROMPT_BLOCKS };
 }
 
 function getSqlClient() {
@@ -63,7 +72,7 @@ function getSqlClient() {
 
 async function ensureSchema() {
   const sql = getSqlClient();
-  if (!sql || globalThis.__texgeneratorNeonSchemaReady) {
+  if (!sql || globalThis.__texgeneratorNeonSchemaVersion === NEON_SCHEMA_VERSION) {
     return;
   }
 
@@ -113,7 +122,34 @@ async function ensureSchema() {
     )
   `;
 
-  globalThis.__texgeneratorNeonSchemaReady = true;
+  await sql`
+    CREATE TABLE IF NOT EXISTS ger_level_settings (
+      level TEXT PRIMARY KEY,
+      prompt_block TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  globalThis.__texgeneratorNeonSchemaVersion = NEON_SCHEMA_VERSION;
+}
+
+async function ensureGerLevelSettingsSeeded() {
+  const sql = getSqlClient();
+  if (!sql || globalThis.__texgeneratorGerSettingsSeeded) {
+    return;
+  }
+
+  await ensureSchema();
+
+  for (const level of GER_LEVEL_ORDER) {
+    await sql`
+      INSERT INTO ger_level_settings (level, prompt_block, updated_at)
+      VALUES (${level}, ${LEVEL_PROMPT_BLOCKS[level]}, NOW())
+      ON CONFLICT (level) DO NOTHING
+    `;
+  }
+
+  globalThis.__texgeneratorGerSettingsSeeded = true;
 }
 
 async function ensureTextsortenSeeded() {
@@ -186,6 +222,65 @@ export async function getTextsorten(): Promise<TextsorteOption[]> {
     console.error("Neon read textsorten failed:", error);
     return DEFAULT_TEXTSORTEN;
   }
+}
+
+export async function getGerLevelSettings(): Promise<GerLevelPromptSettings> {
+  const sql = getSqlClient();
+  if (!sql) {
+    return getDefaultGerLevelSettings();
+  }
+
+  try {
+    await ensureGerLevelSettingsSeeded();
+    const rows = await sql`SELECT level, prompt_block FROM ger_level_settings ORDER BY level ASC`;
+    const settings = getDefaultGerLevelSettings();
+
+    for (const row of rows) {
+      if (!row || typeof row !== "object" || !("level" in row) || !("prompt_block" in row)) {
+        continue;
+      }
+
+      const level = String(row.level) as GerLevel;
+      if (!GER_LEVEL_ORDER.includes(level)) {
+        continue;
+      }
+
+      const promptBlock = String(row.prompt_block).trim();
+      settings[level] = promptBlock || LEVEL_PROMPT_BLOCKS[level];
+    }
+
+    return settings;
+  } catch (error) {
+    console.error("Neon read ger_level_settings failed:", error);
+    return getDefaultGerLevelSettings();
+  }
+}
+
+export async function updateGerLevelSettings(settings: GerLevelPromptSettings): Promise<GerLevelPromptSettings> {
+  const sql = getSqlClient();
+  if (!sql) {
+    throw new Error("DATABASE_URL is not configured.");
+  }
+
+  await ensureGerLevelSettingsSeeded();
+
+  for (const level of GER_LEVEL_ORDER) {
+    const promptBlock = settings[level].trim();
+    await sql`
+      INSERT INTO ger_level_settings (level, prompt_block, updated_at)
+      VALUES (${level}, ${promptBlock}, NOW())
+      ON CONFLICT (level)
+      DO UPDATE SET
+        prompt_block = EXCLUDED.prompt_block,
+        updated_at = NOW()
+    `;
+  }
+
+  return getGerLevelSettings();
+}
+
+export async function getStoredNiveauMerkmalListe(): Promise<string> {
+  return buildNiveauMerkmalListe(await getGerLevelSettings());
 }
 
 export async function storeGeneratedText(params: StoredTextParams): Promise<void> {
@@ -419,7 +514,61 @@ export async function getLibraryTexts(limit = 120): Promise<LibraryTextItem[]> {
 
     return Array.from(deduped.values());
   } catch (error) {
-    console.error("Neon read generated_texts for library failed:", error);
+    console.error("Neon read library texts failed:", error);
     return [];
+  }
+}
+
+export type DashboardStats = {
+  totalTexts: number;
+  niveauCounts: Record<string, number>;
+  textsorteCounts: Record<string, number>;
+  recent: Array<{ id: string; title: string; niveau: string; textsorte: string; updatedAt: string }>;
+};
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const sql = getSqlClient();
+  if (!sql) {
+    return { totalTexts: 0, niveauCounts: {}, textsorteCounts: {}, recent: [] };
+  }
+
+  try {
+    await ensureSchema();
+
+    const [countRows, niveauRows, textsorteRows, recentRows] = await Promise.all([
+      sql`SELECT COUNT(*)::int AS total FROM generated_texts`,
+      sql`SELECT niveau, COUNT(*)::int AS cnt FROM generated_texts GROUP BY niveau ORDER BY niveau`,
+      sql`SELECT textsorte, COUNT(*)::int AS cnt FROM generated_texts GROUP BY textsorte ORDER BY cnt DESC`,
+      sql`SELECT id, niveau, textsorte, response_payload, created_at FROM generated_texts ORDER BY created_at DESC LIMIT 5`,
+    ]);
+
+    const totalTexts = Number((countRows[0] as { total: number }).total ?? 0);
+
+    const niveauCounts: Record<string, number> = {};
+    for (const row of niveauRows) {
+      niveauCounts[String(row.niveau)] = Number(row.cnt);
+    }
+
+    const textsorteCounts: Record<string, number> = {};
+    for (const row of textsorteRows) {
+      textsorteCounts[String(row.textsorte)] = Number(row.cnt);
+    }
+
+    const recent = recentRows.map((row) => {
+      const rp = row.response_payload && typeof row.response_payload === "object" ? (row.response_payload as { title?: unknown }) : {};
+      const createdAt = row.created_at ? new Date(String(row.created_at)) : new Date();
+      return {
+        id: String(row.id),
+        title: typeof rp.title === "string" && rp.title.trim() ? rp.title.trim() : "Ohne Titel",
+        niveau: String(row.niveau),
+        textsorte: String(row.textsorte),
+        updatedAt: Number.isNaN(createdAt.getTime()) ? new Date().toISOString().slice(0, 10) : createdAt.toISOString().slice(0, 10),
+      };
+    });
+
+    return { totalTexts, niveauCounts, textsorteCounts, recent };
+  } catch (error) {
+    console.error("getDashboardStats failed:", error);
+    return { totalTexts: 0, niveauCounts: {}, textsorteCounts: {}, recent: [] };
   }
 }
