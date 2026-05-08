@@ -1294,7 +1294,7 @@ function RedigiertEditor({ content, onChange }: { content: string; onChange: (te
   // Sync external content changes (e.g. when result is loaded)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false);
+      editor.commands.setContent(content, { emitUpdate: false });
     }
   }, [content, editor]);
 
@@ -2602,7 +2602,9 @@ export default function GeneratorForm() {
                       form.pflichtwortschatz ? ["Pflichtwortschatz", form.pflichtwortschatz] : null,
                       form.tabuwortschatz ? ["Tabuwortschatz", form.tabuwortschatz] : null,
                       form.personen ? ["Personen", form.personen] : null,
-                    ] as ([string, string] | null)[]).filter(Boolean).map(([label, value], index, arr) => (
+                    ] as ([string, string] | null)[])
+                      .filter((row): row is [string, string] => row !== null)
+                      .map(([label, value], index, arr) => (
                       <tr key={label} className={index < arr.length - 1 ? "border-b border-zinc-200 dark:border-zinc-800" : ""}>
                         <th scope="row" className="w-2/5 bg-zinc-50 px-3 py-2 text-left font-medium text-zinc-800 align-top dark:bg-zinc-900 dark:text-zinc-100">
                           <a href={`#${LABEL_SECTION_MAP[label] ?? ""}`} className="hover:text-sky-700 dark:hover:text-accent-300 transition-colors">{label}</a>
