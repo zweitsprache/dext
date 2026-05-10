@@ -171,6 +171,41 @@ Regeln für dieses JSON:
 `;
 }
 
+function findVaguePlaceholderPhrases(text: string): string[] {
+  const lower = text.toLowerCase();
+  const patterns: Array<{ pattern: RegExp; label: string }> = [
+    { pattern: /\bin einer stadt\b/, label: "in einer Stadt" },
+    { pattern: /\bin einem land\b/, label: "in einem Land" },
+    { pattern: /\bin einem ort\b/, label: "in einem Ort" },
+    { pattern: /\bin einer firma\b/, label: "in einer Firma" },
+    { pattern: /\bin einem betrieb\b/, label: "in einem Betrieb" },
+    { pattern: /\bin einem restaurant\b/, label: "in einem Restaurant" },
+    { pattern: /\bin einem krankenhaus\b/, label: "in einem Krankenhaus" },
+    { pattern: /\bineine? person\b/, label: "eine Person" },
+  ];
+
+  const hits = patterns.filter(({ pattern }) => pattern.test(lower)).map(({ label }) => label);
+  return Array.from(new Set(hits));
+}
+
+function findUnnaturalCopulaPatterns(text: string): string[] {
+  const lower = text.toLowerCase();
+  // Patterns that are grammatically correct but communicatively unnatural
+  const patterns: Array<{ pattern: RegExp; label: string }> = [
+    // "[Country/City] ist mein Land/meine Heimat" – sounds like a literal translation
+    { pattern: /\b\w+ ist mein(?:e)? (land|heimat|zuhause)\b/, label: '"X ist mein Land/Heimat"' },
+    // "Das/Die/Der X ist mein/meine Y" possessive predicate with abstract noun
+    { pattern: /\bdas \w+ ist mein(e)? (hobby|traum|ziel|wunsch|beruf|leben)\b/, label: '"Das X ist mein Y"' },
+    // "Mein Land ist X" (inverted version)
+    { pattern: /\bmein(?:e)? (land|heimat) ist \w+\b/, label: '"Mein Land ist X"' },
+    // "X ist meine Leidenschaft/Passion"
+    { pattern: /\b\w+ ist meine (leidenschaft|passion|stärke|schwäche)\b/, label: '"X ist meine Leidenschaft"' },
+  ];
+
+  const hits = patterns.filter(({ pattern }) => pattern.test(lower)).map(({ label }) => label);
+  return Array.from(new Set(hits));
+}
+
 function buildExamplePhrasesBlock(phrases: LevelPhrase[]): string {
   if (phrases.length === 0) return "";
   const lines = phrases.map((p) => `• ${p.content} [${p.topic}]`).join("\n");
@@ -193,6 +228,7 @@ ${activeLevelPromptBlock}${buildExamplePhrasesBlock(examplePhrases)}
 Globale Qualitätskriterien
 - Flüssigkeit und Lesbarkeit: klare, natürliche Sätze; kein Telegrafstil, kein Schulbuch-Sound; stimmiger Rhythmus.
 - Authentizität: Der Text soll wie ein echter Text für lesende Erwachsene klingen, nicht wie eine Sprachübung.
+- Stilistische Natürlichkeit: Vermeide Formulierungen, die grammatisch korrekt, aber kommunikativ unecht sind. Kein Muttersprachler würde sagen "Polen ist mein Land" – stattdessen: "Ich komme aus Polen." Kein Muttersprachler würde sagen "Das Kochen ist mein Hobby" – stattdessen: "Ich koche gerne." Bevorzuge idiomatische, umgangssprachlich verankerte Strukturen gegenüber schematischen Subjekt-Kopula-Prädikativ-Konstruktionen. Schreibe so, wie Menschen tatsächlich sprechen und schreiben, nicht wie Grammatikübungen formuliert sind.
 - Kohäsion: thematische Fortschreibung, saubere Referenzen, niveaugerechte Konnektoren.
 - Erwachsenenrelevanz: alltags-, berufs- oder gesellschaftsnah; respektvoll, inklusiv, kultursensibel.
 - DE-CH-Standard: ss statt ß; CH-Lexik nutzen, wenn natürlich.
@@ -200,6 +236,8 @@ Globale Qualitätskriterien
 - Fehlerfreiheit: Grammatik, Orthografie, Zeichensetzung tadellos.
 - Neutralität: keine bewertenden, romantisierenden, verniedlichenden oder moralisierenden Aussagen, ausser wenn Textsorte, Figur oder Vorgabe das motivieren.
 - Inklusive Sprache: neutrale Formen bevorzugt (Mitarbeitende, Lehrpersonen). Wenn Genderform nötig: Doppelpunkt, kein Stern, kein Binnen-I.
+- Personenkonsistenz: Wenn Figuren mit Geschlecht markiert sind (z. B. Name, Rolle, Frau/Herr, Pronomen), dann müssen Name, Rollenbezeichnung und Pronomen durchgehend zusammenpassen. Keine männlichen Vornamen für weiblich markierte Figuren und umgekehrt.
+- Konkretion statt Platzhalter: Fülle fehlende, aber notwendige Details plausibel aus (z. B. Stadtname, Ort, Einrichtung, Berufsbezeichnung), statt vage Formulierungen wie "in einer Stadt" oder "in einer Firma" zu verwenden.
 
 Erzählperspektive und Leseransprache
 - Erzählperspektive und Leseransprache sind getrennte Schalter und bleiben im ganzen Text konsistent, auch in Titel, Teaser und Glossar.
@@ -255,12 +293,14 @@ function buildUserPrompt(input: Required<GenerateRequest>): string {
 Arbeitsanweisungen
 - Übernimm eingebettete Übersteuerungen aus Thema, Themendetails oder Textsorte ohne Rückfrage.
 - Verwende nur die Strukturen des Niveaus ${input.niveau}, kumulativ und strikt.
-- Bevorzuge Inhaltstreue und natürliche Formulierungen innerhalb der Niveaugrenzen.
+- Bevorzuge Inhaltstreue und natürliche Formulierungen innerhalb der Niveaugrenzen. Wähle idiomatische Ausdrucksweisen wie ein Muttersprachler – vermeide schematische Kopulasätze ("X ist mein Y"), wenn es eine natürlichere Formulierung gibt ("Ich komme aus X", "Ich mache gerne Y").
 - ${textsortHint}
 - ${dialogLike ? `Richte die Länge am natürlichen Dialogverlauf aus. Richtwert: für ${input.niveau} kurze, natürliche Sprecherwechsel.` : `Ziele auf ungefähr ${input.wortzahl} Wörter und ${input.absatzzahl} Absätze.`}
 - Glossarregel: ${input.glossar === "nein" ? "kein Glossar" : input.glossar === "nur schwierige Wörter" ? "nur schwierige oder niveaurelevante Wörter glossieren" : "6-12 stufengerechte Glossareinträge"}.
 - Falls Pflichtwortschatz das Niveau herausfordert, stütze die Wörter durch klaren Kontext und decke sie bei aktiviertem Glossar ab.
 - Vermeide jeden Ausdruck aus dem Tabuwortschatz.
+- Wenn Personen vorgegeben sind, halte Geschlecht, Rollenbezeichnungen und Pronomen strikt konsistent (z. B. weibliche Figur mit "sie/ihr" und ggf. Rollenform auf "-in", falls nicht neutral formuliert).
+- Ersetze unbestimmte Platzhalter (z. B. "eine Stadt", "ein Ort", "eine Firma") durch konkrete, plausible Angaben, die zum Kulturraum passen.
 `;
 }
 
@@ -324,9 +364,6 @@ function validateInput(input: Required<GenerateRequest>): string | null {
 
   if (!isDialogLike(input.textsorte)) {
     const limits = LEVEL_LIMITS[input.niveau];
-    if (input.wortzahl < limits.minWords || input.wortzahl > limits.maxWords) {
-      return `Wortzahl ausserhalb des Bereichs für ${input.niveau} (${limits.minWords}-${limits.maxWords}).`;
-    }
     if (input.absatzzahl < limits.minParagraphs || input.absatzzahl > limits.maxParagraphs) {
       return `Absatzzahl ausserhalb des Bereichs für ${input.niveau} (${limits.minParagraphs}-${limits.maxParagraphs}).`;
     }
@@ -530,6 +567,16 @@ function analyzePayload(payload: StructuredText, input: Required<GenerateRequest
     if (invalidPraeteritum.length > 0) {
       riskFlags.push(`Unzulässiges Präteritum für ${input.niveau}: ${invalidPraeteritum.join(", ")}. Erlaubt sind nur war/warst/waren/wart und hatte/hattest/hatten/hattet.`);
     }
+  }
+
+  const vaguePhrases = findVaguePlaceholderPhrases(plainText);
+  if (vaguePhrases.length > 0) {
+    riskFlags.push(`Zu vage Platzhalter gefunden: ${vaguePhrases.join(", ")}. Bitte konkretisieren (z. B. mit Stadtname/Ort/Einrichtung).`);
+  }
+
+  const unnaturalCopulas = findUnnaturalCopulaPatterns(plainText);
+  if (unnaturalCopulas.length > 0) {
+    riskFlags.push(`Unnatürliche Kopulakonstruktionen gefunden: ${unnaturalCopulas.join(", ")}. Umformulieren (z. B. "Polen ist mein Land" → "Ich komme aus Polen"; "Das Kochen ist mein Hobby" → "Ich koche gerne").`);
   }
 
   return {

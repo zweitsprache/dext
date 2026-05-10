@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Arbeitsblatt</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @page {
+    size: A4 portrait;
+    margin: 20mm 18mm 22mm 18mm;
+  }
+
+  @media print {
+    /* Keep print rules Chromium/Puppeteer-safe. */
+    html, body {
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      /* Fallback content frame when @page margins are not honored. */
+      width: 174mm;
+      margin: 20mm auto 22mm auto;
+    }
+  }
+
+  html, body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    background: #fff;
+  }
+
+  /* ===== HEADER ===== */
+  .worksheet-header {
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 8mm;
+    margin-bottom: 8mm;
+  }
+  .worksheet-header h1 {
+    font-size: 20pt;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .worksheet-header .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4mm;
+    font-size: 10pt;
+    color: #555;
+  }
+  .worksheet-header .meta .name-field {
+    border-bottom: 1px solid #1a1a1a;
+    min-width: 60mm;
+    display: inline-block;
+    padding-bottom: 1mm;
+  }
+
+  /* ===== TASK CARD ===== */
+  .task {
+    margin-bottom: 7mm;
+    padding: 5mm 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .task + .task {
+    border-top: 1px solid #d0d0d0;
+  }
+
+  .task-head {
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+    margin-bottom: 3mm;
+  }
+  .task-number {
+    font-size: 13pt;
+    font-weight: 700;
+    min-width: 8mm;
+  }
+  .task-instruction {
+    flex: 1;
+    font-size: 11pt;
+    font-weight: 600;
+  }
+  .task-tag {
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid #1a1a1a;
+    padding: 1mm 2.5mm;
+    border-radius: 1mm;
+    white-space: nowrap;
+  }
+
+  .task-question {
+    margin: 3mm 0 4mm 0;
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+
+  /* ===== 1) LÜCKENTEXT ===== */
+  .lueckentext .gap {
+    display: inline-block;
+    border-bottom: 1.2px solid #1a1a1a;
+    min-width: 42mm;
+    height: 8mm;
+    margin: 0 1mm;
+    vertical-align: baseline;
+  }
+  .word-bank {
+    margin-top: 4mm;
+    padding: 3mm 4mm;
+    border: 1px dashed #1a1a1a;
+    border-radius: 1mm;
+  }
+  .word-bank-label {
+    font-size: 9pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5mm;
+    color: #555;
+  }
+  .word-bank-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm 4mm;
+  }
+  .word-bank-items span {
+    font-style: italic;
+  }
+
+  /* ===== 2) MCQ ===== */
+  .mcq-options {
+    list-style: none;
+    margin-top: 2mm;
+  }
+  .mcq-options li {
+    display: flex;
+    align-items: flex-start;
+    gap: 3mm;
+    padding: 1.5mm 0;
+  }
+  .mcq-circle {
+    width: 4.5mm;
+    height: 4.5mm;
+    border: 1.2px solid #1a1a1a;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.8mm;
+  }
+  .mcq-letter {
+    font-weight: 700;
+    min-width: 6mm;
+  }
+
+  /* ===== 3) TRUEFALSE ===== */
+  .truefalse-row {
+    display: flex;
+    gap: 4mm;
+    margin-top: 3mm;
+    flex-wrap: wrap;
+  }
+  .truefalse-chip {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    padding: 1.5mm 4mm;
+    border: 1px solid #1a1a1a;
+    border-radius: 1mm;
+    font-size: 10.5pt;
+  }
+  .truefalse-chip .box {
+    width: 4mm;
+    height: 4mm;
+    border: 1.2px solid #1a1a1a;
+  }
+
+  /* ===== 4) SATZPUZZLE ===== */
+  .satzpuzzle-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm 3mm;
+    margin: 3mm 0 4mm 0;
+  }
+  .satzpuzzle-tile {
+    border: 1px solid #1a1a1a;
+    padding: 1.5mm 3mm;
+    border-radius: 1mm;
+    font-size: 10.5pt;
+  }
+  .satzpuzzle-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3mm;
+    margin-top: 3mm;
+  }
+  .satzpuzzle-slot {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+  }
+  .satzpuzzle-slot .num {
+    font-weight: 700;
+    font-size: 10pt;
+  }
+  .satzpuzzle-slot .line {
+    border-bottom: 1.2px solid #1a1a1a;
+    width: 28mm;
+    height: 5mm;
+  }
+
+  /* ===== 5) TEXTPUZZLE ===== */
+  .textpuzzle-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 3mm;
+    margin: 3mm 0;
+  }
+  .textpuzzle-card {
+    border: 1px solid #1a1a1a;
+    border-radius: 1mm;
+    padding: 3mm 4mm;
+    display: flex;
+    gap: 3mm;
+  }
+  .textpuzzle-card .label {
+    font-weight: 700;
+    font-size: 12pt;
+    min-width: 6mm;
+  }
+  .textpuzzle-card .text {
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+  .textpuzzle-answer {
+    margin-top: 3mm;
+    display: flex;
+    align-items: baseline;
+    gap: 2mm;
+  }
+  .textpuzzle-answer .label {
+    font-weight: 600;
+  }
+  .textpuzzle-answer .line {
+    flex: 1;
+    border-bottom: 1.2px solid #1a1a1a;
+    height: 5mm;
+  }
+
+  /* ===== 6) ZUORDNUNG ===== */
+  .zuordnung-table {
+    width: 100%;
+    margin-top: 2mm;
+    border-collapse: collapse;
+  }
+  .zuordnung-table td {
+    padding: 2.5mm 3mm;
+    vertical-align: top;
+    font-size: 10.5pt;
+  }
+  .zuordnung-left {
+    width: 45%;
+    border-right: 1px dashed #999;
+  }
+  .zuordnung-left .marker {
+    font-weight: 700;
+    margin-right: 2mm;
+  }
+  .zuordnung-right {
+    width: 45%;
+  }
+  .zuordnung-right .marker {
+    font-weight: 700;
+    margin-right: 2mm;
+  }
+  .zuordnung-match {
+    width: 10%;
+    text-align: center;
+  }
+  .zuordnung-match .line {
+    display: inline-block;
+    border-bottom: 1px solid #1a1a1a;
+    width: 8mm;
+    height: 4mm;
+  }
+
+  /* ===== 7) UMFORMUNG ===== */
+  .umformung-source {
+    padding: 2.5mm 3mm;
+    border-left: 3px solid #1a1a1a;
+    background: #f5f5f5;
+    font-style: italic;
+    margin-bottom: 3mm;
+  }
+  .write-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 6mm;
+    margin-top: 2mm;
+  }
+  .write-lines .line {
+    border-bottom: 1px solid #1a1a1a;
+    height: 0;
+  }
+
+  /* ===== 8) W-FRAGEN ===== */
+  .wfragen-area {
+    margin-top: 2mm;
+    display: flex;
+    flex-direction: column;
+    gap: 7mm;
+  }
+  .wfragen-area .line {
+    border-bottom: 1px solid #1a1a1a;
+    height: 0;
+  }
+
+  /* ===== 9) STICHWORT ===== */
+  .stichwort-list {
+    margin-top: 2mm;
+    display: flex;
+    flex-direction: column;
+    gap: 7mm;
+  }
+  .stichwort-item {
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+  }
+  .stichwort-item .bullet {
+    font-weight: 700;
+    font-size: 11pt;
+  }
+  .stichwort-item .line {
+    flex: 1;
+    border-bottom: 1px solid #1a1a1a;
+    height: 0;
+  }
+
+  /* ===== ANSWER KEY ===== */
+  .answer-key {
+    page-break-before: always;
+    break-before: page;
+  }
+  .answer-key h2 {
+    font-size: 16pt;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 3mm;
+    margin-bottom: 6mm;
+  }
+  .solution {
+    margin-bottom: 4mm;
+    page-break-inside: avoid;
+  }
+  .solution-head {
+    font-weight: 700;
+    margin-bottom: 1mm;
+  }
+  .solution-answer {
+    margin-left: 5mm;
+  }
+  .solution-hint {
+    margin-left: 5mm;
+    margin-top: 1mm;
+    font-size: 10pt;
+    font-style: italic;
+    color: #555;
+  }
+  .solution-task-clone {
+    margin-top: 3mm;
+    margin-left: 5mm;
+  }
+  .solution-task-clone .task-head {
+    margin-bottom: 2mm;
+  }
+  .solution-task-clone .gap.is-filled {
+    min-width: 42mm;
+    height: 8mm;
+    line-height: 8mm;
+    padding: 0 1mm;
+    box-sizing: border-box;
+    text-align: center;
+    font-weight: 600;
+  }
+  .solution-task-clone .word-bank-items .is-used {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.2px;
+    opacity: 0.7;
+  }
+  .solution-task-clone .mcq-circle.is-selected,
+  .solution-task-clone .truefalse-chip.is-selected .box {
+    background: #1a1a1a;
+  }
+  .solution-task-clone .satzpuzzle-slot .line.is-filled,
+  .solution-task-clone .textpuzzle-answer .line.is-filled,
+  .solution-task-clone .zuordnung-match .line.is-filled,
+  .solution-task-clone .write-lines .line.is-filled,
+  .solution-task-clone .wfragen-area .line.is-filled,
+  .solution-task-clone .stichwort-item .line.is-filled {
+    display: inline-flex;
+    align-items: flex-end;
+    padding: 0 1mm 0.6mm 1mm;
+    box-sizing: border-box;
+    font-weight: 600;
+  }
+  .solution-task-clone .satzpuzzle-slot .line.is-filled {
+    justify-content: center;
+  }
+  .solution-task-clone .textpuzzle-answer .line.is-filled,
+  .solution-task-clone .zuordnung-match .line.is-filled,
+  .solution-task-clone .write-lines .line.is-filled,
+  .solution-task-clone .wfragen-area .line.is-filled,
+  .solution-task-clone .stichwort-item .line.is-filled {
+    min-height: 5mm;
+  }
+
+  /* ===== UTILITIES ===== */
+  .label-faint {
+    font-size: 9pt;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ WORKSHEET HEADER ============ -->
+<header class="worksheet-header">
+  <h1>{{worksheetTitle}}</h1>
+  <div class="meta">
+    <span>Name: <span class="name-field"></span></span>
+    <span>Datum: <span class="name-field" style="min-width: 30mm;"></span></span>
+  </div>
+</header>
+
+<!-- ============ TASK 1: LÜCKENTEXT ============ -->
+<section class="task lueckentext">
+  <div class="task-head">
+    <span class="task-number">1.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Lückentext</span>
+  </div>
+  <div class="task-question">
+    Die Schweiz hat <span class="gap"></span> Kantone und vier <span class="gap"></span>.
+  </div>
+  <div class="word-bank">
+    <div class="word-bank-label">Wortbank</div>
+    <div class="word-bank-items">
+      <span>26</span><span>Landessprachen</span><span>Berge</span><span>Halbkantone</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TASK 2: MCQ ============ -->
+<section class="task mcq">
+  <div class="task-head">
+    <span class="task-number">2.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">MCQ</span>
+  </div>
+  <div class="task-question">{{question}}</div>
+  <ul class="mcq-options">
+    <li><span class="mcq-circle"></span><span class="mcq-letter">A</span><span>Option Text A</span></li>
+    <li><span class="mcq-circle"></span><span class="mcq-letter">B</span><span>Option Text B</span></li>
+    <li><span class="mcq-circle"></span><span class="mcq-letter">C</span><span>Option Text C</span></li>
+    <li><span class="mcq-circle"></span><span class="mcq-letter">D</span><span>Option Text D</span></li>
+  </ul>
+</section>
+
+<!-- ============ TASK 3: TRUEFALSE ============ -->
+<section class="task truefalse">
+  <div class="task-head">
+    <span class="task-number">3.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Richtig/Falsch</span>
+  </div>
+  <div class="task-question">{{question}}</div>
+  <div class="truefalse-row">
+    <div class="truefalse-chip"><span class="box"></span>Richtig</div>
+    <div class="truefalse-chip"><span class="box"></span>Falsch</div>
+    <div class="truefalse-chip"><span class="box"></span>Nicht im Text</div>
+    <div class="truefalse-chip"><span class="box"></span>Unklar</div>
+  </div>
+</section>
+
+<!-- ============ TASK 4: SATZPUZZLE ============ -->
+<section class="task satzpuzzle">
+  <div class="task-head">
+    <span class="task-number">4.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Satzpuzzle</span>
+  </div>
+  <div class="task-question">{{question}}</div>
+  <div class="satzpuzzle-tiles">
+    <span class="satzpuzzle-tile">geht</span>
+    <span class="satzpuzzle-tile">heute</span>
+    <span class="satzpuzzle-tile">die Klasse</span>
+    <span class="satzpuzzle-tile">ins Museum</span>
+  </div>
+  <div class="satzpuzzle-slots">
+    <div class="satzpuzzle-slot"><span class="num">1.</span><span class="line"></span></div>
+    <div class="satzpuzzle-slot"><span class="num">2.</span><span class="line"></span></div>
+    <div class="satzpuzzle-slot"><span class="num">3.</span><span class="line"></span></div>
+    <div class="satzpuzzle-slot"><span class="num">4.</span><span class="line"></span></div>
+  </div>
+</section>
+
+<!-- ============ TASK 5: TEXTPUZZLE ============ -->
+<section class="task textpuzzle">
+  <div class="task-head">
+    <span class="task-number">5.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Textpuzzle</span>
+  </div>
+  <div class="textpuzzle-cards">
+    <div class="textpuzzle-card"><span class="label">A</span><span class="text">Erster Textabschnitt mit mehreren Sätzen für die Demo.</span></div>
+    <div class="textpuzzle-card"><span class="label">B</span><span class="text">Zweiter Textabschnitt mit weiterem Inhalt zur Sortierung.</span></div>
+    <div class="textpuzzle-card"><span class="label">C</span><span class="text">Dritter Textabschnitt als Schlusspart der Aufgabe.</span></div>
+  </div>
+  <div class="textpuzzle-answer">
+    <span class="label">Reihenfolge:</span><span class="line"></span>
+  </div>
+</section>
+
+<!-- ============ TASK 6: ZUORDNUNG ============ -->
+<section class="task zuordnung">
+  <div class="task-head">
+    <span class="task-number">6.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Zuordnung</span>
+  </div>
+  <table class="zuordnung-table">
+    <tr>
+      <td class="zuordnung-left"><span class="marker">1</span>Begriff eins</td>
+      <td class="zuordnung-match"><span class="line"></span></td>
+      <td class="zuordnung-right"><span class="marker">A</span>Definition A</td>
+    </tr>
+    <tr>
+      <td class="zuordnung-left"><span class="marker">2</span>Begriff zwei</td>
+      <td class="zuordnung-match"><span class="line"></span></td>
+      <td class="zuordnung-right"><span class="marker">B</span>Definition B</td>
+    </tr>
+    <tr>
+      <td class="zuordnung-left"><span class="marker">3</span>Begriff drei</td>
+      <td class="zuordnung-match"><span class="line"></span></td>
+      <td class="zuordnung-right"><span class="marker">C</span>Definition C</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ============ TASK 7: UMFORMUNG ============ -->
+<section class="task umformung">
+  <div class="task-head">
+    <span class="task-number">7.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Umformung</span>
+  </div>
+  <div class="umformung-source">{{question}}</div>
+  <div class="write-lines">
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+  </div>
+</section>
+
+<!-- ============ TASK 8: W-FRAGEN ============ -->
+<section class="task wfragen">
+  <div class="task-head">
+    <span class="task-number">8.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">W-Fragen</span>
+  </div>
+  <div class="task-question">{{question}}</div>
+  <div class="wfragen-area">
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+  </div>
+</section>
+
+<!-- ============ TASK 9: STICHWORT ============ -->
+<section class="task stichwort">
+  <div class="task-head">
+    <span class="task-number">9.</span>
+    <span class="task-instruction">{{instruction}}</span>
+    <span class="task-tag">Stichwortzusammenfassung</span>
+  </div>
+  <div class="task-question">{{question}}</div>
+  <ul class="stichwort-list">
+    <li class="stichwort-item"><span class="bullet">•</span><span class="line"></span></li>
+    <li class="stichwort-item"><span class="bullet">•</span><span class="line"></span></li>
+    <li class="stichwort-item"><span class="bullet">•</span><span class="line"></span></li>
+    <li class="stichwort-item"><span class="bullet">•</span><span class="line"></span></li>
+    <li class="stichwort-item"><span class="bullet">•</span><span class="line"></span></li>
+  </ul>
+</section>
+
+<!-- ============ ANSWER KEY ============ -->
+<section class="answer-key">
+  <h2>Lösungen</h2>
+
+  <div class="solution">
+    <section class="task lueckentext solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">1.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Lückentext</span>
+      </div>
+      <div class="task-question">
+        Die Schweiz hat <span class="gap is-filled">26</span> Kantone und vier <span class="gap is-filled">Landessprachen</span>.
+      </div>
+      <div class="word-bank">
+        <div class="word-bank-label">Wortbank</div>
+        <div class="word-bank-items">
+          <span class="is-used">26</span><span class="is-used">Landessprachen</span><span>Berge</span><span>Halbkantone</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task mcq solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">2.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">MCQ</span>
+      </div>
+      <div class="task-question">Welcher dieser Kantone liegt in der italienischsprachigen Schweiz?</div>
+      <ul class="mcq-options">
+        <li><span class="mcq-circle"></span><span class="mcq-letter">A</span><span>Wallis</span></li>
+        <li><span class="mcq-circle is-selected"></span><span class="mcq-letter">B</span><span>Tessin</span></li>
+        <li><span class="mcq-circle"></span><span class="mcq-letter">C</span><span>Graubünden</span></li>
+        <li><span class="mcq-circle"></span><span class="mcq-letter">D</span><span>Aargau</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task truefalse solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">3.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Richtig/Falsch</span>
+      </div>
+      <div class="task-question">Rätoromanisch ist eine der vier Schweizer Landessprachen.</div>
+      <div class="truefalse-row">
+        <div class="truefalse-chip is-selected"><span class="box"></span>Richtig</div>
+        <div class="truefalse-chip"><span class="box"></span>Falsch</div>
+        <div class="truefalse-chip"><span class="box"></span>Nicht im Text</div>
+        <div class="truefalse-chip"><span class="box"></span>Unklar</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task satzpuzzle solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">4.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Satzpuzzle</span>
+      </div>
+      <div class="task-question">{{question}}</div>
+      <div class="satzpuzzle-tiles">
+        <span class="satzpuzzle-tile">Heute</span>
+        <span class="satzpuzzle-tile">geht</span>
+        <span class="satzpuzzle-tile">die Klasse</span>
+        <span class="satzpuzzle-tile">ins Museum</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task textpuzzle solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">5.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Textpuzzle</span>
+      </div>
+      <div class="textpuzzle-cards">
+        <div class="textpuzzle-card"><span class="label">A</span><span class="text">Schliesslich erreichten sie den Gipfel und genossen die Aussicht auf die Alpen.</span></div>
+        <div class="textpuzzle-card"><span class="label">B</span><span class="text">Früh am Morgen packten sie ihre Rucksäcke und machten sich auf den Weg.</span></div>
+        <div class="textpuzzle-card"><span class="label">C</span><span class="text">Nach zwei Stunden Wanderung legten sie eine Pause ein und assen ihr Vesper.</span></div>
+      </div>
+      <div class="textpuzzle-answer">
+        <span class="label">Reihenfolge:</span><span class="line is-filled">B, C, A</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task zuordnung solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">6.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Zuordnung</span>
+      </div>
+      <table class="zuordnung-table">
+        <tr>
+          <td class="zuordnung-left"><span class="marker">1</span>Kanton</td>
+          <td class="zuordnung-match"><span class="line is-filled">B</span></td>
+          <td class="zuordnung-right"><span class="marker">A</span>Hauptstadt der Schweiz</td>
+        </tr>
+        <tr>
+          <td class="zuordnung-left"><span class="marker">2</span>Bern</td>
+          <td class="zuordnung-match"><span class="line is-filled">A</span></td>
+          <td class="zuordnung-right"><span class="marker">B</span>Politische Verwaltungseinheit</td>
+        </tr>
+        <tr>
+          <td class="zuordnung-left"><span class="marker">3</span>Bundesrat</td>
+          <td class="zuordnung-match"><span class="line is-filled">C</span></td>
+          <td class="zuordnung-right"><span class="marker">C</span>Schweizer Regierung</td>
+        </tr>
+      </table>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task umformung solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">7.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Umformung</span>
+      </div>
+      <div class="umformung-source">Der Lehrer erklärt den Schülern die Aufgabe.</div>
+      <div class="write-lines">
+        <div class="line is-filled">Den Schülern wird die Aufgabe vom Lehrer erklärt.</div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task wfragen solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">8.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">W-Fragen</span>
+      </div>
+      <div class="task-question">Warum ist die Schweiz mehrsprachig?</div>
+      <div class="wfragen-area">
+        <div class="line is-filled">Wegen der vier Sprachregionen Deutsch,</div>
+        <div class="line is-filled">Französisch, Italienisch und</div>
+        <div class="line is-filled">Rätoromanisch.</div>
+        <div class="line"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="solution">
+    <section class="task stichwort solution-task-clone">
+      <div class="task-head">
+        <span class="task-number">9.</span>
+        <span class="task-instruction">{{instruction}}</span>
+        <span class="task-tag">Stichwortzusammenfassung</span>
+      </div>
+      <div class="task-question">Schweizer Geografie</div>
+      <ul class="stichwort-list">
+        <li class="stichwort-item"><span class="bullet">•</span><span class="line is-filled">26 Kantone</span></li>
+        <li class="stichwort-item"><span class="bullet">•</span><span class="line is-filled">4 Sprachregionen</span></li>
+        <li class="stichwort-item"><span class="bullet">•</span><span class="line is-filled">Alpen</span></li>
+        <li class="stichwort-item"><span class="bullet">•</span><span class="line is-filled">neutral</span></li>
+        <li class="stichwort-item"><span class="bullet">•</span><span class="line is-filled">Bundesstaat</span></li>
+      </ul>
+    </section>
+  </div>
+</section>
+
+</body>
+</html>

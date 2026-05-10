@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Check, Copy, Library } from "lucide-react";
+import { Check, Copy, Library, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
 
@@ -58,8 +58,21 @@ type LibraryText = {
   updatedAt: string;
 };
 
+type PublishedText = {
+  id: string;
+  generatedTextId: string;
+  title: string;
+  summary: string;
+  paragraphs: string[];
+  imageUrl?: string;
+  imagePrompt?: string;
+  isPublic: boolean;
+  publishedAt: string;
+};
+
 type LibraryApiResponse = {
   texts?: LibraryText[];
+  publishedTexts?: PublishedText[];
 };
 
 function LibraryContent() {
@@ -74,6 +87,10 @@ function LibraryContent() {
   const [copied, setCopied] = useState(false);
   const [enabledTextsorten, setEnabledTextsorten] = useState<string[]>(SORTED_TEXTSORTEN);
   const [disabledTextsorten, setDisabledTextsorten] = useState<string[]>(SORTED_DISABLED_TEXTSORTEN);
+  const [publishedTexts, setPublishedTexts] = useState<PublishedText[]>([]);
+  const [isPublishedLoading, setIsPublishedLoading] = useState(true);
+  const [activePublishedText, setActivePublishedText] = useState<PublishedText | null>(null);
+  const [publishedCopied, setPublishedCopied] = useState(false);
 
   const queryTextsorte = searchParams.get("textsorte");
   const prefixedTypeFilter = queryTextsorte && enabledTextsorten.includes(queryTextsorte) ? queryTextsorte : "alle";
@@ -190,9 +207,47 @@ function LibraryContent() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPublishedTexts() {
+      try {
+        const response = await fetch("/api/library?published=true");
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as LibraryApiResponse;
+        if (!Array.isArray(data.publishedTexts)) {
+          return;
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setPublishedTexts(data.publishedTexts);
+      } catch {
+        // Keep static fallback if endpoint is unavailable.
+      } finally {
+        if (isMounted) {
+          setIsPublishedLoading(false);
+        }
+      }
+    }
+
+    void loadPublishedTexts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const closeModal = useCallback(() => {
     setActiveText(null);
     setCopied(false);
+    setActivePublishedText(null);
+    setPublishedCopied(false);
   }, []);
 
   useEffect(() => {
@@ -228,6 +283,27 @@ function LibraryContent() {
     await navigator.clipboard.writeText(buildCopyText(activeText));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  useEffect(() => {
+    if (!activePublishedText) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [activePublishedText]);
+
+  function buildCopyTextPublished(text: PublishedText): string {
+    const lines: string[] = [text.title, "", text.summary, "", ...text.paragraphs];
+    return lines.join("\n");
+  }
+
+  async function handleCopyPublished() {
+    if (!activePublishedText) return;
+    await navigator.clipboard.writeText(buildCopyTextPublished(activePublishedText));
+    setPublishedCopied(true);
+    setTimeout(() => setPublishedCopied(false), 2000);
   }
 
   return (
@@ -407,6 +483,78 @@ function LibraryContent() {
               )}
             </section>
 
+            {/* Published Library Section */}
+            <section className="radius-section-card mt-8 border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                <Library className="h-6 w-6" aria-hidden="true" />
+                Öffentliche Bibliothek
+              </h2>
+              <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
+
+              <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                {isPublishedLoading
+                  ? "Veröffentlichte Texte werden geladen..."
+                  : `${publishedTexts.length} veröffentlichter Text${publishedTexts.length !== 1 ? "e" : ""}`}
+              </p>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {isPublishedLoading
+                  ? Array.from({ length: 3 }).map((_, idx) => (
+                      <article key={`published-skeleton-${idx}`} className="radius-card border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden flex flex-col">
+                        <div className="bg-zinc-100 dark:bg-zinc-800 aspect-video animate-pulse" />
+                        <div className="px-4 pt-3 pb-4 space-y-3">
+                          <div className="h-5 w-24 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="h-4 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                          <div className="h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+                        </div>
+                      </article>
+                    ))
+                  : publishedTexts.map((item) => (
+                      <article
+                        key={item.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setActivePublishedText(item)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setActivePublishedText(item);
+                          }
+                        }}
+                        className="radius-card cursor-pointer border border-zinc-300 bg-white text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 overflow-hidden flex flex-col"
+                      >
+                        {item.imageUrl ? (
+                          <div className="w-full bg-zinc-100 dark:bg-zinc-800 aspect-video flex items-center justify-center overflow-hidden">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full bg-zinc-100 px-4 py-8 dark:bg-zinc-800 aspect-video flex items-center justify-center">
+                            <img
+                              src="/placeholder/dext-img-placeholder.png"
+                              alt={item.title}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        )}
+                        <div className="px-4 pt-3 pb-4">
+                          <div className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">{item.title}</div>
+                          <p className="mt-2 text-base leading-snug text-zinc-600 dark:text-zinc-300">{item.summary}</p>
+                          <div className="mt-3 text-[11px] text-zinc-400">Veröffentlicht: {item.publishedAt}</div>
+                        </div>
+                      </article>
+                    ))}
+                {!isPublishedLoading && publishedTexts.length === 0 && (
+                  <p className="md:col-span-2 xl:col-span-3 py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">
+                    Noch keine veröffentlichten Texte vorhanden.
+                  </p>
+                )}
+              </div>
+            </section>
+
             {activeText && (
               <div
                 className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4"
@@ -479,7 +627,81 @@ function LibraryContent() {
                 </div>
               </div>
             )}
-          </div>
+            {/* Published Text Modal */}
+            {activePublishedText && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-4"
+                onClick={closeModal}
+              >
+                <div
+                  className="max-h-[90vh] w-full max-w-3xl radius-section-card border border-zinc-300 bg-white text-zinc-800 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 flex flex-col"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-100">{activePublishedText.title}</h3>
+                        {activePublishedText.summary && (
+                          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{activePublishedText.summary}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                      >
+                        <X className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {activePublishedText.imageUrl && (
+                    <div className="w-full bg-zinc-100 dark:bg-zinc-800 aspect-video flex items-center justify-center border-b border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                      <img
+                        src={activePublishedText.imageUrl}
+                        alt={activePublishedText.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <div className="space-y-3 text-sm leading-7">
+                      {activePublishedText.paragraphs.length > 0 ? (
+                        activePublishedText.paragraphs.map((paragraph, index) => (
+                          <p key={`${activePublishedText.id}-paragraph-${index}`}>{paragraph}</p>
+                        ))
+                      ) : (
+                        <p className="text-zinc-500 dark:text-zinc-400">Für diesen Eintrag ist kein Volltext verfügbar.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-6 py-3 dark:border-zinc-700 dark:bg-zinc-950">
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Veröffentlicht: {activePublishedText.publishedAt}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyPublished}
+                        className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 inline-flex items-center gap-2"
+                      >
+                        {publishedCopied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        {publishedCopied ? "Kopiert" : "Kopieren"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      >
+                        Schliessen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}          </div>
         </div>
       </div>
     </div>

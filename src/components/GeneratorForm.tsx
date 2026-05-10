@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Astroid, BrainCircuit, CirclePile, FileStack, ListChecks, Milestone, PencilLine, PencilRuler, Play, Settings2, SlidersVertical, TextAlignStart, View } from "lucide-react";
+import { Astroid, BrainCircuit, CirclePile, FileStack, List, ListChecks, ListOrdered, Milestone, PencilLine, PencilRuler, Play, Settings2, SlidersVertical, TextAlignStart, View, Library } from "lucide-react";
 import AppSidebar from "@/components/AppSidebar";
+import PublishDialog, { type PublishFormData } from "@/components/PublishDialog";
+import { mergeAttributes } from "@tiptap/core";
+import Paragraph from "@tiptap/extension-paragraph";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useState } from "react";
@@ -247,6 +250,33 @@ type TaskResultData = {
   worksheetTitle: string;
   tasks: GeneratedTaskItem[];
 };
+
+const BoxedParagraph = Paragraph.extend({
+  addAttributes() {
+    return {
+      boxed: {
+        default: false,
+        parseHTML: (element) => element.getAttribute("data-boxed") === "true",
+      },
+    };
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      "p",
+      mergeAttributes(
+        HTMLAttributes,
+        node.attrs.boxed
+          ? {
+              "data-boxed": "true",
+              class: "rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800",
+            }
+          : {},
+      ),
+      0,
+    ];
+  },
+});
 
 const TASK_FORMAT_LABELS: Array<{ id: ExerciseFormat; label: string }> = [
   { id: "lueckentext", label: "Lückentext" },
@@ -1061,8 +1091,8 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
           <div>
             <div className="text-base font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Wortbank</div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {renderedOptions.map((option) => (
-                <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-base text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              {renderedOptions.map((option, index) => (
+                <span key={`${task.id}-wordbank-${index}-${option}`} className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-base text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                   {option}
                 </span>
               ))}
@@ -1126,8 +1156,8 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
       <div className="mt-3 space-y-3">
         <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
         <div className="flex flex-wrap gap-2">
-          {renderedOptions.map((option) => (
-            <span key={`${task.id}-${option}`} className="radius-single-line border border-zinc-300 px-3 py-1.5 text-base text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
+          {renderedOptions.map((option, index) => (
+            <span key={`${task.id}-tf-${index}-${option}`} className="radius-single-line border border-zinc-300 px-3 py-1.5 text-base text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
               {option}
             </span>
           ))}
@@ -1141,8 +1171,8 @@ function TaskQuestionBody({ task }: { task: GeneratedTaskItem }) {
       <p className="whitespace-pre-wrap text-base text-zinc-700 dark:text-zinc-300">{task.question}</p>
       {renderedOptions.length > 0 && (
         <ol className="space-y-1 text-base text-zinc-600 dark:text-zinc-300">
-          {renderedOptions.map((option) => (
-            <li key={`${task.id}-${option}`}>{option}</li>
+          {renderedOptions.map((option, index) => (
+            <li key={`${task.id}-list-${index}-${option}`}>{option}</li>
           ))}
         </ol>
       )}
@@ -1157,12 +1187,7 @@ function buildConflictMessage(form: FormState): string | null {
 
   if (form.textsorte !== "Dialog" && form.textsorte !== "Interview") {
     const limits = NIVEAU_LIMITS[form.niveau];
-    const requestedWords = form.wortzahl ? Number(form.wortzahl) : null;
     const requestedParagraphs = form.absatzzahl ? Number(form.absatzzahl) : null;
-
-    if (requestedWords && (requestedWords < limits.minWords || requestedWords > limits.maxWords)) {
-      return `Die Wortzahl liegt ausserhalb des empfohlenen Bereichs für ${form.niveau} (${limits.minWords}-${limits.maxWords}).`;
-    }
 
     if (requestedParagraphs && (requestedParagraphs < limits.minParagraphs || requestedParagraphs > limits.maxParagraphs)) {
       return `Die Absatzzahl passt nicht zum Bereich für ${form.niveau} (${limits.minParagraphs}-${limits.maxParagraphs}).`;
@@ -1219,6 +1244,14 @@ function getEditableResultText(result: ResultData | null): string {
   }
 
   return [result.title, result.teaser, ...result.paragraphs].filter(Boolean).join("\n\n");
+}
+
+function plainTextToHtml(text: string): string {
+  return text
+    .split(/\n\n+/)
+    .filter(Boolean)
+    .map((para) => `<p>${para.replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }
 
 function toggleArrayEntry<T>(entries: T[], value: T): T[] {
@@ -1330,7 +1363,7 @@ const LABEL_SECTION_MAP: Record<string, string> = {
 
 function RedigiertEditor({ content, onChange }: { content: string; onChange: (text: string) => void }) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit.configure({ paragraph: false }), BoxedParagraph],
     content,
     immediatelyRender: false,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -1352,6 +1385,35 @@ function RedigiertEditor({ content, onChange }: { content: string; onChange: (te
       </div>
       {/* Toolbar */}
       <div className="mt-4 flex flex-wrap gap-1 rounded-t border border-b-0 border-zinc-300 bg-zinc-50 px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-800">
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={`rounded px-2 py-1 text-sm font-semibold transition-colors ${editor?.isActive("heading", { level: 1 }) ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Überschrift 1"
+        >H1</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`rounded px-2 py-1 text-sm font-semibold transition-colors ${editor?.isActive("heading", { level: 2 }) ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Überschrift 2"
+        >H2</button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`rounded px-2 py-1 text-sm font-semibold transition-colors ${editor?.isActive("heading", { level: 3 }) ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Überschrift 3"
+        >H3</button>
+        <div className="mx-1 w-px self-stretch bg-zinc-300 dark:bg-zinc-600" />
+        <button
+          type="button"
+          onClick={() => {
+            const isBoxed = editor?.isActive("paragraph", { boxed: true }) ?? false;
+            editor?.chain().focus().setNode("paragraph", { boxed: !isBoxed }).run();
+          }}
+          className={`rounded px-2 py-1 text-sm font-semibold transition-colors ${editor?.isActive("paragraph", { boxed: true }) ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
+          title="Absatz als Box"
+        >Box</button>
+        <div className="mx-1 w-px self-stretch bg-zinc-300 dark:bg-zinc-600" />
         <button
           type="button"
           onClick={() => editor?.chain().focus().toggleBold().run()}
@@ -1376,13 +1438,13 @@ function RedigiertEditor({ content, onChange }: { content: string; onChange: (te
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
           className={`rounded px-2 py-1 text-sm transition-colors ${editor?.isActive("bulletList") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
           title="Liste"
-        >• Liste</button>
+        ><List className="h-4 w-4" aria-hidden="true" /></button>
         <button
           type="button"
           onClick={() => editor?.chain().focus().toggleOrderedList().run()}
           className={`rounded px-2 py-1 text-sm transition-colors ${editor?.isActive("orderedList") ? "bg-zinc-200 dark:bg-zinc-600" : "hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
           title="Nummerierte Liste"
-        >1. Liste</button>
+        ><ListOrdered className="h-4 w-4" aria-hidden="true" /></button>
         <div className="mx-1 w-px self-stretch bg-zinc-300 dark:bg-zinc-600" />
         <button
           type="button"
@@ -1400,7 +1462,7 @@ function RedigiertEditor({ content, onChange }: { content: string; onChange: (te
         >↪</button>
       </div>
       {/* Editor area */}
-      <div className="min-h-[24rem] rounded-b border border-zinc-300 bg-white px-3.5 py-3 text-base text-zinc-900 focus-within:border-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 [&_.tiptap]:min-h-[22rem] [&_.tiptap]:outline-none [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_p]:mb-2">
+      <div className="min-h-[24rem] rounded-b border border-zinc-300 bg-white px-3.5 py-3 text-base text-zinc-900 focus-within:border-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 [&_.tiptap]:min-h-[22rem] [&_.tiptap]:outline-none [&_.tiptap_h1]:mb-3 [&_.tiptap_h1]:text-3xl [&_.tiptap_h1]:font-bold [&_.tiptap_h2]:mb-2 [&_.tiptap_h2]:text-2xl [&_.tiptap_h2]:font-semibold [&_.tiptap_h3]:mb-2 [&_.tiptap_h3]:text-xl [&_.tiptap_h3]:font-semibold [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_p]:mb-2 [&_.tiptap_p[data-boxed=true]]:mb-3 [&_.tiptap_p[data-boxed=true]]:rounded-md [&_.tiptap_p[data-boxed=true]]:border [&_.tiptap_p[data-boxed=true]]:border-zinc-200 [&_.tiptap_p[data-boxed=true]]:bg-zinc-50 [&_.tiptap_p[data-boxed=true]]:px-3 [&_.tiptap_p[data-boxed=true]]:py-2 dark:[&_.tiptap_p[data-boxed=true]]:border-zinc-700 dark:[&_.tiptap_p[data-boxed=true]]:bg-zinc-800">
         {!content && !editor?.isFocused && (
           <p className="pointer-events-none absolute text-zinc-400">Der generierte Text erscheint hier zur Bearbeitung.</p>
         )}
@@ -1435,6 +1497,9 @@ export default function GeneratorForm() {
   const [tasksError, setTasksError] = useState("");
   const [enabledTextsorten, setEnabledTextsorten] = useState<string[]>(SORTED_TEXTSORTEN);
   const [disabledTextsorten, setDisabledTextsorten] = useState<string[]>(SORTED_DISABLED_TEXTSORTEN);
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [publishError, setPublishError] = useState("");
 
   const displayedPresets = useMemo(() => {
     const q = searchSubmitted ? presetSearch.trim().toLowerCase() : "";
@@ -1495,7 +1560,7 @@ export default function GeneratorForm() {
 
   useEffect(() => {
     if (workflowStep === "continue" && processingAction === "redigieren") {
-      setProcessingText(getEditableResultText(result));
+      setProcessingText(plainTextToHtml(getEditableResultText(result)));
     }
   }, [workflowStep, processingAction, result]);
 
@@ -1687,6 +1752,69 @@ export default function GeneratorForm() {
       setTasksError(taskError instanceof Error ? taskError.message : "Fehler bei der Aufgabengenerierung");
     } finally {
       setTasksLoading(false);
+    }
+  }
+
+  async function handlePublish(publishData: PublishFormData) {
+    if (!result) {
+      throw new Error("No text to publish");
+    }
+
+    setPublishLoading(true);
+    setPublishError("");
+
+    try {
+      // Generate image if requested
+      let imageUrl: string | undefined;
+      let imagePrompt: string | undefined;
+
+      if (publishData.imagePrompt) {
+        imagePrompt = publishData.imagePrompt;
+        const imageResponse = await fetch("/api/openai/image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: imagePrompt,
+            size: "1024x1024",
+            quality: "high",
+          }),
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData.dataUrl;
+        } else {
+          console.error("Image generation failed");
+        }
+      }
+
+      // Publish text to library
+      const publishResponse = await fetch("/api/library/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: publishData.title,
+          summary: publishData.summary,
+          paragraphs: publishData.paragraphs,
+          imageUrl,
+          imagePrompt,
+          isPublic: publishData.isPublic,
+        }),
+      });
+
+      const publishResult = await publishResponse.json();
+      if (!publishResponse.ok) {
+        throw new Error(publishResult.error ?? "Failed to publish text");
+      }
+
+      // Show success message
+      alert(`Text published successfully! ID: ${publishResult.publishedTextId}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error during publishing";
+      setPublishError(message);
+      throw err;
+    } finally {
+      setPublishLoading(false);
     }
   }
 
@@ -2097,7 +2225,7 @@ export default function GeneratorForm() {
                       type="button"
                       onClick={() => {
                         setProcessingAction("redigieren");
-                        setProcessingText(getEditableResultText(result));
+                        setProcessingText(plainTextToHtml(getEditableResultText(result)));
                       }}
                       className={`radius-single-line border px-4 py-3 text-sm font-medium transition-colors ${
                         processingAction === "redigieren"
@@ -2767,44 +2895,81 @@ export default function GeneratorForm() {
                   <div className="flex gap-3 text-base">
                     <button type="button" onClick={() => navigator.clipboard.writeText(formatResult(result))} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Kopieren</button>
                     <button type="button" onClick={() => { setResult(null); setTaskResult(null); setTasksError(""); }} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Leeren</button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublishDialogOpen(true)}
+                      className="inline-flex items-center gap-2 text-zinc-500 transition-colors hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400"
+                    >
+                      <Library className="h-4 w-4" aria-hidden="true" />
+                      Veröffentlichen
+                    </button>
                   </div>
                 </div>
               )}
 
-              {taskResult && (
-                <div className="mt-4 space-y-4">
-                  <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{taskResult.worksheetTitle}</h3>
-                    <p className="mt-2 text-base text-zinc-500 dark:text-zinc-400">{taskResult.tasks.length} Aufgaben generiert</p>
-                    <div className="mt-4 flex flex-wrap gap-3 text-base">
-                      <button
-                        type="button"
-                        onClick={() => navigator.clipboard.writeText(formatTaskWorksheet(taskResult))}
-                        className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                      >
-                        Arbeitsblatt kopieren
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => downloadTextFile("arbeitsblatt.txt", formatTaskWorksheet(taskResult))}
-                        className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                      >
-                        Arbeitsblatt herunterladen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigator.clipboard.writeText(formatTaskSolutions(taskResult))}
-                        className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                      >
-                        Lösungen kopieren
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => downloadTextFile("loesungen.txt", formatTaskSolutions(taskResult))}
-                        className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                      >
-                        Lösungen herunterladen
-                      </button>
+              {/* Worksheet view: two-column on desktop (text left, exercises right), stacked on mobile */}
+              {result && taskResult && (
+                <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
+                  {/* LEFT / TOP: Text */}
+                  <div className="min-w-0 flex-1 space-y-4">
+                    <div className="radius-card border border-zinc-200 p-4 dark:border-zinc-800">
+                      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{result.title}</h3>
+                      <p className="mt-2 text-base italic text-zinc-600 dark:text-zinc-300">{result.teaser}</p>
+                      <div className="prose prose-zinc mt-4 max-w-none text-base dark:prose-invert">
+                        {result.paragraphs.map((paragraph, index) => (
+                          <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-base">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.setItem("dext:worksheet", JSON.stringify({ text: result, tasks: taskResult }));
+                            window.open("/worksheet", "_blank");
+                          }}
+                          className="radius-single-line bg-sky-600 px-4 py-2 text-base font-semibold text-white transition-colors hover:bg-sky-700"
+                        >
+                          Interaktives Arbeitsblatt öffnen
+                        </button>
+                        <button type="button" onClick={() => navigator.clipboard.writeText(formatResult(result))} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Kopieren</button>
+                        <button type="button" onClick={() => { setResult(null); setTaskResult(null); setTasksError(""); }} className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">Leeren</button>
+                        <button
+                          type="button"
+                          onClick={() => setIsPublishDialogOpen(true)}
+                          className="inline-flex items-center gap-2 text-zinc-500 transition-colors hover:text-sky-600 dark:text-zinc-400 dark:hover:text-sky-400"
+                        >
+                          <Library className="h-4 w-4" aria-hidden="true" />
+                          Veröffentlichen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(formatTaskWorksheet(taskResult))}
+                          className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          Arbeitsblatt kopieren
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadTextFile("arbeitsblatt.txt", formatTaskWorksheet(taskResult))}
+                          className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          Arbeitsblatt herunterladen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(formatTaskSolutions(taskResult))}
+                          className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          Lösungen kopieren
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadTextFile("loesungen.txt", formatTaskSolutions(taskResult))}
+                          className="text-zinc-500 transition-colors hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          Lösungen herunterladen
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2849,6 +3014,14 @@ export default function GeneratorForm() {
           </div>
         </div>
       </div>
+
+      <PublishDialog
+        isOpen={isPublishDialogOpen}
+        result={result}
+        onClose={() => setIsPublishDialogOpen(false)}
+        onPublish={handlePublish}
+        isLoading={publishLoading}
+      />
     </div>
   );
 }

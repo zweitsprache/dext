@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Astroid, BookOpen, Check, Headphones, Image as ImageIcon, LayoutList, Library, WandSparkles } from "lucide-react";
+import { Astroid, BookOpen, BrainCircuit, Check, Headphones, Image as ImageIcon, LayoutList, Library, WandSparkles } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 type Props = {
@@ -29,7 +29,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
       <div className="flex-1 overflow-y-auto">
         <section>
           <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Tools</h2>
-          <ul className="mt-3 divide-y divide-zinc-200 text-base text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
+          <ul className="mt-3 divide-y divide-zinc-200 text-sm text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
             <li className="py-2">
               <Link
                 href="/generator"
@@ -49,6 +49,15 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
               </Link>
             </li>
             <li className="py-2">
+              <Link
+                href="/analysis"
+                className={`flex items-center gap-2 ${activeHref === "/analysis" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
+              >
+                <BrainCircuit className="h-4 w-4 shrink-0" aria-hidden="true" />
+                dext:analyze
+              </Link>
+            </li>
+            <li className="py-2">
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                 <Headphones className="h-4 w-4 shrink-0" aria-hidden="true" />
                 dext : voice
@@ -61,10 +70,13 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
               </div>
             </li>
             <li className="py-2">
-              <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+              <Link
+                href="/check"
+                className={`flex items-center gap-2 ${activeHref === "/check" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
+              >
                 <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
                 dext : check
-              </div>
+              </Link>
             </li>
             <li className="py-2">
               <Link
@@ -92,7 +104,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             BIBLIOTHEK
           </h2>
-          <ul className="mt-3 divide-y divide-zinc-200 text-base text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
+          <ul className="mt-3 divide-y divide-zinc-200 text-sm text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
             {enabledTextsorten.map((textsorte) => (
               <li key={`sidebar-textsorte-${textsorte}`} className="py-2">
                 <Link

@@ -31,6 +31,28 @@ type DbHealth = {
   error?: string;
 };
 
+export type PublishedTextParams = {
+  generatedTextId?: string;
+  title: string;
+  summary: string;
+  paragraphs: string[];
+  imageUrl?: string;
+  imagePrompt?: string;
+  isPublic: boolean;
+};
+
+export type PublishedTextItem = {
+  id: string;
+  generatedTextId: string;
+  title: string;
+  summary: string;
+  paragraphs: string[];
+  imageUrl?: string;
+  imagePrompt?: string;
+  isPublic: boolean;
+  publishedAt: string;
+};
+
 export type LibraryTextItem = {
   id: string;
   title: string;
@@ -55,7 +77,7 @@ declare global {
   var __texgeneratorGerSettingsSeeded: boolean | undefined;
 }
 
-const NEON_SCHEMA_VERSION = 3;
+const NEON_SCHEMA_VERSION = 4;
 
 function getDefaultGerLevelSettings(): GerLevelPromptSettings {
   return { ...LEVEL_PROMPT_BLOCKS };
@@ -146,6 +168,33 @@ async function ensureSchema() {
   await sql`
     CREATE INDEX IF NOT EXISTS level_phrases_level_idx
     ON level_phrases (level)
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS published_texts (
+      id BIGSERIAL PRIMARY KEY,
+      generated_text_id BIGINT REFERENCES generated_texts(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      content_paragraphs TEXT[] NOT NULL,
+      image_url TEXT,
+      image_prompt TEXT,
+      is_public BOOLEAN NOT NULL DEFAULT FALSE,
+      published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(generated_text_id)
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS published_texts_is_public_idx
+    ON published_texts (is_public)
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS published_texts_published_at_idx
+    ON published_texts (published_at DESC)
   `;
 
   globalThis.__texgeneratorNeonSchemaVersion = NEON_SCHEMA_VERSION;
@@ -656,5 +705,157 @@ export async function getSimilarPhrases(
   } catch (error) {
     console.error("getSimilarPhrases failed:", error);
     return [];
+  }
+}
+
+export async function publishText(params: PublishedTextParams): Promise<string | null> {
+  const sql = getSqlClient();
+  if (!sql) {
+    return null;
+  }
+
+  try {
+    await ensureSchema();
+
+    const generatedTextId = params.generatedTextId ? BigInt(params.generatedTextId) : null;
+
+    const result = await sql`
+      INSERT INTO published_texts (
+        generated_text_id,
+        title,
+        summary,
+        content_paragraphs,
+        image_url,
+        image_prompt,
+        is_public,
+        published_at
+      )
+      VALUES (
+        ${generatedTextId},
+        ${params.title},
+        ${params.summary},
+        ${params.paragraphs},
+        ${params.imageUrl ?? null},
+        ${params.imagePrompt ?? null},
+        ${params.isPublic},
+        NOW()
+      )
+      ON CONFLICT (generated_text_id)
+      DO UPDATE SET
+        title = EXCLUDED.title,
+        summary = EXCLUDED.summary,
+        content_paragraphs = EXCLUDED.content_paragraphs,
+        image_url = EXCLUDED.image_url,
+        image_prompt = EXCLUDED.image_prompt,
+        is_public = EXCLUDED.is_public,
+        updated_at = NOW()
+      RETURNING id
+    `;
+
+    const id = Array.isArray(result) && result[0] && typeof result[0] === "object" && "id" in result[0]
+      ? String(result[0].id)
+      : null;
+
+    return id;
+  } catch (error) {
+    console.error("Neon publishText failed:", error);
+    return null;
+  }
+}
+
+export async function getPublishedTexts(limit = 50, onlyPublic = true): Promise<PublishedTextItem[]> {
+  const sql = getSqlClient();
+  if (!sql) {
+    return [];
+  }
+
+  try {
+    await ensureSchema();
+
+    let query = `
+      SELECT
+        id,
+        generated_text_id,
+        title,
+        summary,
+        content_paragraphs,
+        image_url,
+        image_prompt,
+        is_public,
+        published_at
+      FROM published_texts
+    `;
+
+    if (onlyPublic) {
+      query += ` WHERE is_public = true`;
+    }
+
+    query += ` ORDER BY published_at DESC LIMIT ${limit}`;
+
+    const rows = await sql(query);
+
+    return rows
+      .filter((row) => row && typeof row === "object")
+      .map((row) => ({
+        id: String(row.id),
+        generatedTextId: String(row.generated_text_id),
+        title: typeof row.title === "string" ? row.title : "",
+        summary: typeof row.summary === "string" ? row.summary : "",
+        paragraphs: Array.isArray(row.content_paragraphs) ? row.content_paragraphs.map(String) : [],
+        imageUrl: typeof row.image_url === "string" ? row.image_url : undefined,
+        imagePrompt: typeof row.image_prompt === "string" ? row.image_prompt : undefined,
+        isPublic: Boolean(row.is_public),
+        publishedAt: row.published_at ? new Date(String(row.published_at)).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      }));
+  } catch (error) {
+    console.error("Neon getPublishedTexts failed:", error);
+    return [];
+  }
+}
+
+export async function getPublishedTextById(id: string): Promise<PublishedTextItem | null> {
+  const sql = getSqlClient();
+  if (!sql) {
+    return null;
+  }
+
+  try {
+    await ensureSchema();
+
+    const rows = await sql`
+      SELECT
+        id,
+        generated_text_id,
+        title,
+        summary,
+        content_paragraphs,
+        image_url,
+        image_prompt,
+        is_public,
+        published_at
+      FROM published_texts
+      WHERE id = ${BigInt(id)}
+    `;
+
+    const row = Array.isArray(rows) && rows[0] && typeof rows[0] === "object" ? rows[0] : null;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: String(row.id),
+      generatedTextId: String(row.generated_text_id),
+      title: typeof row.title === "string" ? row.title : "",
+      summary: typeof row.summary === "string" ? row.summary : "",
+      paragraphs: Array.isArray(row.content_paragraphs) ? row.content_paragraphs.map(String) : [],
+      imageUrl: typeof row.image_url === "string" ? row.image_url : undefined,
+      imagePrompt: typeof row.image_prompt === "string" ? row.image_prompt : undefined,
+      isPublic: Boolean(row.is_public),
+      publishedAt: row.published_at ? new Date(String(row.published_at)).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    };
+  } catch (error) {
+    console.error("Neon getPublishedTextById failed:", error);
+    return null;
   }
 }
