@@ -305,7 +305,7 @@ function LibraryContent() {
                       <article
                         key={`library-skeleton-${index}`}
                         aria-hidden="true"
-                        className="radius-card border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden"
+                        className="radius-card border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 overflow-hidden flex flex-col"
                       >
                         <div className="bg-zinc-100 px-4 pt-2 pb-2 dark:bg-zinc-800">
                           <div className="flex items-center gap-2">
@@ -313,6 +313,7 @@ function LibraryContent() {
                             <div className="h-5 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
                           </div>
                         </div>
+                        <div className="w-full bg-zinc-200 dark:bg-zinc-800 aspect-video animate-pulse" />
                         <div className="px-4 pt-3 pb-4">
                           <div className="mb-1.5 h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
                           <div className="h-4 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
@@ -339,7 +340,7 @@ function LibraryContent() {
                             setActiveText(item);
                           }
                         }}
-                        className="radius-card cursor-pointer border border-zinc-300 bg-white text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 overflow-hidden"
+                        className="radius-card cursor-pointer border border-zinc-300 bg-white text-zinc-700 transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 overflow-hidden flex flex-col"
                       >
                         <div className="bg-zinc-100 px-4 pt-2 pb-2 dark:bg-zinc-800">
                           <div className="flex items-center gap-2">
@@ -348,6 +349,13 @@ function LibraryContent() {
                             </span>
                             <div className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">{item.title}</div>
                           </div>
+                        </div>
+                        <div className="w-full bg-zinc-200 dark:bg-zinc-800 aspect-video flex items-center justify-center">
+                          <img
+                            src="/placeholder/dext-img-placeholder.png"
+                            alt={item.title}
+                            className="w-full h-full object-contain"
+                          />
                         </div>
                         <div className="px-4 pt-3 pb-4">
                           <div className="mb-1.5 text-[11px] uppercase tracking-wide text-zinc-400">{item.textsorte}</div>
@@ -405,56 +413,69 @@ function LibraryContent() {
                 onClick={closeModal}
               >
                 <div
-                  className="max-h-[90vh] w-full max-w-3xl overflow-y-auto radius-section-card border border-zinc-300 bg-white p-6 text-zinc-800 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                  className="max-h-[90vh] w-full max-w-3xl radius-section-card border border-zinc-300 bg-white text-zinc-800 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 flex flex-col"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-xs uppercase tracking-wide text-zinc-500">{activeText.niveau} • {activeText.textsorte}</div>
-                      <h3 className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-100">{activeText.title}</h3>
-                      {activeText.teaser && <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{activeText.teaser}</p>}
-                    </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy()}
-                        className="flex items-center gap-1.5 radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      >
-                        {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                        {copied ? "Kopiert" : "Kopieren"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      >
-                        Schliessen
-                      </button>
+                  <div className="p-6 border-b border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-zinc-500">{activeText.niveau} • {activeText.textsorte}</div>
+                        <h3 className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-100">{activeText.title}</h3>
+                        {activeText.teaser && <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{activeText.teaser}</p>}
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy()}
+                          className="flex items-center gap-1.5 radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        >
+                          {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copied ? "Kopiert" : "Kopieren"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          className="radius-single-line border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        >
+                          Schliessen
+                        </button>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3 text-sm leading-7">
-                    {activeText.paragraphs.length > 0 ? (
-                      activeText.paragraphs.map((paragraph, index) => (
-                        <p key={`${activeText.id}-paragraph-${index}`}>{paragraph}</p>
-                      ))
-                    ) : (
-                      <p className="text-zinc-500 dark:text-zinc-400">Für diesen Eintrag ist kein Volltext verfügbar.</p>
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 aspect-video flex items-center justify-center border-b border-zinc-200 dark:border-zinc-700">
+                    <img
+                      src="/placeholder/dext-img-placeholder.png"
+                      alt={activeText.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+
+                  <div className="p-6 overflow-y-auto flex-1">
+
+                    <div className="space-y-3 text-sm leading-7">
+                      {activeText.paragraphs.length > 0 ? (
+                        activeText.paragraphs.map((paragraph, index) => (
+                          <p key={`${activeText.id}-paragraph-${index}`}>{paragraph}</p>
+                        ))
+                      ) : (
+                        <p className="text-zinc-500 dark:text-zinc-400">Für diesen Eintrag ist kein Volltext verfügbar.</p>
+                      )}
+                    </div>
+
+                    {activeText.glossary.length > 0 && (
+                      <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                        <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Glossar</h4>
+                        <ul className="mt-2 space-y-1.5 text-sm text-zinc-600 dark:text-zinc-300">
+                          {activeText.glossary.map((entry) => (
+                            <li key={`${activeText.id}-${entry.lemma}`}>
+                              <span className="font-medium text-zinc-900 dark:text-zinc-100">{entry.lemma}:</span> {entry.explanation}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
-
-                  {activeText.glossary.length > 0 && (
-                    <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-                      <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Glossar</h4>
-                      <ul className="mt-2 space-y-1.5 text-sm text-zinc-600 dark:text-zinc-300">
-                        {activeText.glossary.map((entry) => (
-                          <li key={`${activeText.id}-${entry.lemma}`}>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">{entry.lemma}:</span> {entry.explanation}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

@@ -1,3 +1,4 @@
+import { AuthLanding } from "@/components/AuthLanding";
 import { AuthView } from "@neondatabase/auth-ui";
 import { authViewPaths } from "@neondatabase/auth-ui/server";
 
@@ -13,6 +14,10 @@ export default async function AuthPage({
   params: Promise<{ path: string }>;
 }) {
   const { path } = await params;
+
+  if (path === authViewPaths.SIGN_IN || path === authViewPaths.SIGN_UP) {
+    return <AuthLanding initialTab={path as "sign-in" | "sign-up"} />;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">

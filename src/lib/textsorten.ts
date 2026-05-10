@@ -15,6 +15,7 @@ export const DEFAULT_TEXTSORTEN: TextsorteOption[] = [
   { name: "Dialog", enabled: true },
   { name: "Anleitung", enabled: true },
   { name: "Brief / Mail", enabled: true },
+  { name: "Veranstaltungskalender", enabled: true },
   { name: "Werbetext / Anzeige (Inserate, Stellenanzeigen, Wohnungsinserate – sehr DaZ-relevant)", enabled: false },
   { name: "Formular (Anmeldung, Antrag – wichtig für Alltagsbewältigung)", enabled: false },
   { name: "Speisekarte / Fahrplan / Wetterbericht (diskontinuierliche Texte)", enabled: false },

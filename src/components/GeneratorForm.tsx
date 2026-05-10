@@ -20,6 +20,7 @@ const TEXTSORTEN = [
   "Dialog",
   "Anleitung",
   "Brief / Mail",
+  "Veranstaltungskalender",
 ] as const;
 
 const DISABLED_TEXTSORTEN = [
@@ -69,13 +70,15 @@ const LESERANSPRACHEN = ["textsortennatürlich", "keine", "sie-formell", "du-ver
 const GLOSSAR_OPTIONEN = ["ja", "nein", "nur schwierige Wörter"] as const;
 const KULTURRAEUME = ["CH", "DE", "AT", "neutral-DACH"] as const;
 const PRESETS_PER_TAB_PAGE = 4;
+const PRESETGEN_HANDOFF_KEY = "dext:presetgen:handoff";
 
-const MODEL_OPTIONS: Array<{ id: string; label: string; provider: "anthropic" | "openai" }> = [
+const MODEL_OPTIONS: Array<{ id: string; label: string; provider: "anthropic" | "openai" | "mistral" }> = [
   { id: "claude-opus-4-5", label: "Claude Opus 4", provider: "anthropic" },
   { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5", provider: "anthropic" },
   { id: "gpt-4.1", label: "GPT-4.1", provider: "openai" },
   { id: "gpt-4o", label: "GPT-4o", provider: "openai" },
   { id: "gpt-4o-mini", label: "GPT-4o mini", provider: "openai" },
+  { id: "mistral-large-latest", label: "Mistral Large", provider: "mistral" },
   { id: "qwen3.5-plus", label: "Qwen 3.5", provider: "openai" },
 ];
 
@@ -945,6 +948,7 @@ const TEXTSORTEN_DEFAULTS: Record<Textsorte, { perspective: string; address: str
   "Dialog": { perspective: "figuren-wechselnd", address: "keine", tone: "textsortennatürlich" },
   "Anleitung": { perspective: "dritte-person", address: "sie-formell", tone: "sachlich-neutral" },
   "Brief / Mail": { perspective: "ich", address: "sie-formell", tone: "formell" },
+  "Veranstaltungskalender": { perspective: "dritte-person", address: "keine", tone: "sachlich-neutral" },
 };
 
 function parseList(value: string): string[] {
@@ -1219,6 +1223,47 @@ function getEditableResultText(result: ResultData | null): string {
 
 function toggleArrayEntry<T>(entries: T[], value: T): T[] {
   return entries.includes(value) ? entries.filter((entry) => entry !== value) : [...entries, value];
+}
+
+function coercePresetgenFormValues(input: unknown): Partial<FormState> {
+  if (!input || typeof input !== "object") {
+    return {};
+  }
+
+  const record = input as Record<string, unknown>;
+  const out: Partial<FormState> = {};
+
+  if (typeof record.niveau === "string" && NIVEAUS.includes(record.niveau as (typeof NIVEAUS)[number])) {
+    out.niveau = record.niveau;
+  }
+
+  if (typeof record.thema === "string") out.thema = record.thema;
+  if (typeof record.themendetails === "string") out.themendetails = record.themendetails;
+  if (typeof record.zielgruppe === "string") out.zielgruppe = record.zielgruppe;
+  if (typeof record.setting === "string") out.setting = record.setting;
+  if (typeof record.tonalitaet === "string") out.tonalitaet = record.tonalitaet;
+  if (typeof record.erzaehlperspektive === "string") out.erzaehlperspektive = record.erzaehlperspektive;
+  if (typeof record.leseransprache === "string") out.leseransprache = record.leseransprache;
+  if (typeof record.lernschwerpunkt === "string") out.lernschwerpunkt = record.lernschwerpunkt;
+  if (typeof record.pflichtwortschatz === "string") out.pflichtwortschatz = record.pflichtwortschatz;
+  if (typeof record.tabuwortschatz === "string") out.tabuwortschatz = record.tabuwortschatz;
+  if (typeof record.personen === "string") out.personen = record.personen;
+  if (typeof record.wortzahl === "string") out.wortzahl = record.wortzahl;
+  if (typeof record.absatzzahl === "string") out.absatzzahl = record.absatzzahl;
+  if (typeof record.kulturraum === "string") out.kulturraum = record.kulturraum;
+
+  if (typeof record.textsorte === "string" && TEXTSORTEN.includes(record.textsorte as Textsorte)) {
+    out.textsorte = record.textsorte as Textsorte;
+  }
+
+  if (
+    typeof record.glossar === "string"
+    && ["ja", "nein", "nur schwierige Wörter"].includes(record.glossar)
+  ) {
+    out.glossar = record.glossar as GlossarOption;
+  }
+
+  return out;
 }
 
 function estimateLueckenCandidates(text: string, config: LueckentextConfig): number {
@@ -1498,6 +1543,42 @@ export default function GeneratorForm() {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PRESETGEN_HANDOFF_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as { preset?: unknown };
+      const values = coercePresetgenFormValues(parsed?.preset);
+      if (Object.keys(values).length === 0) {
+        window.localStorage.removeItem(PRESETGEN_HANDOFF_KEY);
+        return;
+      }
+
+      setForm({
+        ...DEFAULT_FORM,
+        ...values,
+        wortzahl: values.wortzahl ?? "",
+        absatzzahl: values.absatzzahl ?? "",
+      });
+      setActivePresetId(null);
+      setError("");
+      setResult(null);
+      setTaskResult(null);
+      setTasksError("");
+
+      window.localStorage.removeItem(PRESETGEN_HANDOFF_KEY);
+
+      if (window.location.search.includes("presetgen=1")) {
+        window.history.replaceState({}, "", "/generator");
+      }
+    } catch {
+      window.localStorage.removeItem(PRESETGEN_HANDOFF_KEY);
+    }
+  }, []);
+
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
     setActivePresetId(null);
@@ -1631,7 +1712,7 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("generate")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-2 text-base font-medium transition-colors ${
                     workflowStep === "generate"
                       ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
@@ -1643,7 +1724,7 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("continue")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-2 text-base font-medium transition-colors ${
                     workflowStep === "continue"
                       ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
@@ -1655,7 +1736,7 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("tasks")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-2 text-base font-medium transition-colors ${
                     workflowStep === "tasks"
                       ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
@@ -1667,7 +1748,7 @@ export default function GeneratorForm() {
                 <button
                   type="button"
                   onClick={() => setWorkflowStep("audio")}
-                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-3 text-base font-medium transition-colors ${
+                  className={`inline-flex w-full items-center justify-center gap-2 radius-single-line border px-4 py-2 text-base font-medium transition-colors ${
                     workflowStep === "audio"
                       ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-accent-950 dark:text-accent-300"
                       : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
@@ -2581,7 +2662,7 @@ export default function GeneratorForm() {
                 Aktive Einstellungen
               </h2>
               <div className="mt-3 flex"><div className="w-40 border-b border-sky-600 dark:border-[#9AA180] section-divider-accent" /><div className="flex-1 border-b border-sky-400 dark:border-zinc-700 section-divider-line" /></div>
-              <div className="mt-4 overflow-hidden radius-card border border-zinc-200 dark:border-zinc-800">
+              <div className="mt-4 overflow-hidden radius-single-line border border-zinc-200 dark:border-zinc-800">
                 <table className="w-full border-collapse text-base text-zinc-600 dark:text-zinc-300">
                   <tbody>
                     {([

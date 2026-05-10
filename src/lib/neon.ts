@@ -55,7 +55,7 @@ declare global {
   var __texgeneratorGerSettingsSeeded: boolean | undefined;
 }
 
-const NEON_SCHEMA_VERSION = 2;
+const NEON_SCHEMA_VERSION = 3;
 
 function getDefaultGerLevelSettings(): GerLevelPromptSettings {
   return { ...LEVEL_PROMPT_BLOCKS };
@@ -128,6 +128,24 @@ async function ensureSchema() {
       prompt_block TEXT NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `;
+
+  await sql`CREATE EXTENSION IF NOT EXISTS vector`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS level_phrases (
+      id BIGSERIAL PRIMARY KEY,
+      content TEXT NOT NULL,
+      level TEXT NOT NULL,
+      topic TEXT NOT NULL,
+      embedding vector(1536),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS level_phrases_level_idx
+    ON level_phrases (level)
   `;
 
   globalThis.__texgeneratorNeonSchemaVersion = NEON_SCHEMA_VERSION;
@@ -570,5 +588,73 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   } catch (error) {
     console.error("getDashboardStats failed:", error);
     return { totalTexts: 0, niveauCounts: {}, textsorteCounts: {}, recent: [] };
+  }
+}
+
+export type LevelPhrase = {
+  content: string;
+  level: string;
+  topic: string;
+};
+
+export async function getSimilarPhrases(
+  niveau: string,
+  queryText: string,
+  limit = 8,
+): Promise<LevelPhrase[]> {
+  const sql = getSqlClient();
+  if (!sql) return [];
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    await ensureSchema();
+
+    // Check if any phrases exist for this level
+    const countRows = await sql`
+      SELECT COUNT(*)::int AS cnt FROM level_phrases WHERE level = ${niveau} AND embedding IS NOT NULL
+    `;
+    const count = Array.isArray(countRows) && countRows[0] ? Number(countRows[0].cnt) : 0;
+    if (count === 0) return [];
+
+    // Embed the query text
+    const embeddingRes = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model: "text-embedding-3-small", input: queryText }),
+    });
+
+    if (!embeddingRes.ok) {
+      console.error("Embedding request failed:", await embeddingRes.text());
+      return [];
+    }
+
+    const embeddingJson = (await embeddingRes.json()) as { data: Array<{ embedding: number[] }> };
+    const vector = embeddingJson.data[0].embedding;
+    const vectorStr = `[${vector.join(",")}]`;
+
+    const rows = await sql`
+      SELECT content, level, topic
+      FROM level_phrases
+      WHERE level = ${niveau}
+        AND embedding IS NOT NULL
+      ORDER BY embedding <=> ${vectorStr}::vector
+      LIMIT ${limit}
+    `;
+
+    return rows
+      .filter((r) => r && typeof r === "object" && "content" in r)
+      .map((r) => ({
+        content: String(r.content),
+        level: String(r.level),
+        topic: String(r.topic),
+      }));
+  } catch (error) {
+    console.error("getSimilarPhrases failed:", error);
+    return [];
   }
 }

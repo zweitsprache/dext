@@ -47,7 +47,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, sans-serif;
+  font-family: var(--font-encode-sans), var(--font-sans), Arial, sans-serif;
 }
 
 /* Minimal scrollbar — transparent track, thin neutral thumb */

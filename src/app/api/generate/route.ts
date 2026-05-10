@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
-import { getGerLevelSettings, storeGeneratedText } from "@/lib/neon";
+import { getGerLevelSettings, getSimilarPhrases, storeGeneratedText, type LevelPhrase } from "@/lib/neon";
 import { buildNiveauMerkmalListe, FOCUS_MIN_LEVEL, GER_LEVEL_ORDER, LEVEL_LIMITS, LEVEL_RULES, type GerLevel } from "@/lib/ger-level-specs";
 
-type ModelProvider = "anthropic" | "openai";
+type ModelProvider = "anthropic" | "openai" | "mistral";
 
 const MODEL_PROVIDERS: Record<string, ModelProvider> = {
   "claude-opus-4-5": "anthropic",
@@ -12,6 +12,7 @@ const MODEL_PROVIDERS: Record<string, ModelProvider> = {
   "gpt-4.1": "openai",
   "gpt-4o": "openai",
   "gpt-4o-mini": "openai",
+  "mistral-large-latest": "mistral",
   "qwen3.5-plus": "openai",
 };
 
@@ -140,6 +141,9 @@ function getTextsortHint(textsorte: string): string {
   if (normalized.includes("brief") || normalized.includes("mail")) {
     return "Brief / Mail: Anrede und Grussformel niveaugerecht. Direkte Leseransprache ist hier sinnvoll.";
   }
+  if (normalized.includes("veranstaltungskalender")) {
+    return "Veranstaltungskalender: Einträge mit Datum, Zeit, Ort, Titel und kurzer Beschreibung. Listen- oder Spaltenformat. Sachlich, informativ.";
+  }
 
   return "";
 }
@@ -167,7 +171,14 @@ Regeln für dieses JSON:
 `;
 }
 
-function buildSystemPrompt(niveau: string, glossaryMode: string, dialogLike: boolean, niveauMerkmalListe: string, activeLevelPromptBlock: string): string {
+function buildExamplePhrasesBlock(phrases: LevelPhrase[]): string {
+  if (phrases.length === 0) return "";
+  const lines = phrases.map((p) => `• ${p.content} [${p.topic}]`).join("\n");
+  return `\nAuthentische Referenzsätze (${phrases[0].level})
+Diese Sätze zeigen, wie Sprache auf diesem Niveau klingt. Sie sind strukturelle Vorbilder, keine inhaltliche Vorgabe.\n${lines}\n`;
+}
+
+function buildSystemPrompt(niveau: string, glossaryMode: string, dialogLike: boolean, niveauMerkmalListe: string, activeLevelPromptBlock: string, examplePhrases: LevelPhrase[] = []): string {
   return `Rolle und Ziel
 Du bist Autor:in für didaktisch hochwertige Lesetexte im Bereich Deutsch als Zweitsprache (Erwachsene). Erzeuge einen flüssigen, authentischen und sprachlich korrekten Text auf dem vorgegebenen Niveau zum vorgegebenen Thema in der vorgegebenen Textsorte.
 Sakrosankte Regel: Verwende ausschliesslich die in der Niveau-Merkmal-Liste für das gewählte Niveau freigegebenen Strukturen (kumulativ). Höhere Strukturen sind verboten - auch dann, wenn sie inhaltlich schöner wären. Lieber den Inhalt umformulieren als das Niveau überschreiten.
@@ -177,7 +188,7 @@ ${niveauMerkmalListe}
 
 Aktives Zielniveau
 ${niveau}
-${activeLevelPromptBlock}
+${activeLevelPromptBlock}${buildExamplePhrasesBlock(examplePhrases)}
 
 Globale Qualitätskriterien
 - Flüssigkeit und Lesbarkeit: klare, natürliche Sätze; kein Telegrafstil, kein Schulbuch-Sound; stimmiger Rhythmus.
@@ -355,7 +366,18 @@ function parseJsonResponse(raw: string): StructuredText {
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   const jsonText = start >= 0 && end >= 0 ? cleaned.slice(start, end + 1) : cleaned;
-  const parsed = JSON.parse(jsonText) as Partial<StructuredText>;
+  let parsed: Partial<StructuredText>;
+
+  try {
+    parsed = JSON.parse(jsonText) as Partial<StructuredText>;
+  } catch {
+    // Some providers occasionally return JSON-like output with typographic quotes.
+    const normalized = jsonText
+      .replace(/[“”„‟]/g, '"')
+      .replace(/[«»]/g, '"')
+      .replace(/[‘’‚‛]/g, "'");
+    parsed = JSON.parse(normalized) as Partial<StructuredText>;
+  }
 
   return {
     title: typeof parsed.title === "string" ? parsed.title.trim() : "",
@@ -574,6 +596,46 @@ async function generateWithOpenAI(client: OpenAI, model: string, system: string,
   return parseJsonResponse(text);
 }
 
+async function generateWithMistral(apiKey: string, model: string, system: string, prompt: string): Promise<StructuredText> {
+  const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2600,
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Mistral API error: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json() as {
+    choices?: Array<{
+      message?: {
+        content?: string | Array<{ type?: string; text?: string }>;
+      };
+    }>;
+  };
+
+  const content = data.choices?.[0]?.message?.content;
+  const text = typeof content === "string"
+    ? content
+    : Array.isArray(content)
+      ? content.map((part) => part?.text ?? "").join("\n").trim()
+      : "";
+  return parseJsonResponse(text);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as GenerateRequest;
@@ -612,6 +674,15 @@ export async function POST(request: NextRequest) {
         const client = new OpenAI({ apiKey });
         generateFn = (system, prompt) => generateWithOpenAI(client, input.model, system, prompt);
       }
+    } else if (provider === "mistral") {
+      const apiKey = process.env.MISTRAL_API_KEY;
+      if (!apiKey) {
+        return new Response(JSON.stringify({ error: "MISTRAL_API_KEY nicht konfiguriert" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      generateFn = (system, prompt) => generateWithMistral(apiKey, input.model, system, prompt);
     } else {
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
@@ -630,13 +701,22 @@ export async function POST(request: NextRequest) {
     const activeLevelPromptBlock = GER_LEVEL_ORDER.includes(input.niveau as GerLevel)
       ? gerLevelSettings[input.niveau as GerLevel]
       : niveauMerkmalListe;
-    const systemPrompt = buildSystemPrompt(input.niveau, input.glossar, dialogLike, niveauMerkmalListe, activeLevelPromptBlock);
+    const queryText = [input.thema, input.lernschwerpunkt, input.textsorte].filter(Boolean).join(" ");
+    const examplePhrases = await getSimilarPhrases(input.niveau, queryText, 8);
+    const systemPrompt = buildSystemPrompt(input.niveau, input.glossar, dialogLike, niveauMerkmalListe, activeLevelPromptBlock, examplePhrases);
 
     const draft = await generateFn(systemPrompt, buildUserPrompt(input));
     const draftSummary = analyzePayload(draft, input);
-    const finalPayload = input.model === "qwen3.5-plus"
-      ? draft
-      : await generateFn(systemPrompt, buildRepairPrompt(input, draft, draftSummary));
+
+    let finalPayload = draft;
+    if (input.model !== "qwen3.5-plus") {
+      try {
+        finalPayload = await generateFn(systemPrompt, buildRepairPrompt(input, draft, draftSummary));
+      } catch (repairError) {
+        console.warn("Repair pass failed, returning draft:", repairError);
+      }
+    }
+
     const finalSummary = analyzePayload(finalPayload, input);
 
     const payload: GenerationResponse = {
@@ -661,7 +741,7 @@ export async function POST(request: NextRequest) {
       textsorte: input.textsorte,
       zielgruppe: input.zielgruppe,
       textOrigin: input.textOrigin,
-      requestPayload: input,
+      requestPayload: { ...input, examplePhrases },
       responsePayload: payload,
     });
 
@@ -672,7 +752,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Generate error:", error);
-    return new Response(JSON.stringify({ error: "Fehler bei der Textgenerierung" }), {
+    const message = error instanceof Error ? error.message : "Fehler bei der Textgenerierung";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

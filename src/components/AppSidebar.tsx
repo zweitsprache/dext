@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Astroid, BookOpen, Check, Headphones, LayoutList, Library } from "lucide-react";
+import { Astroid, BookOpen, Check, Headphones, Image as ImageIcon, LayoutList, Library, WandSparkles } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 type Props = {
@@ -28,34 +28,52 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
 
       <div className="flex-1 overflow-y-auto">
         <section>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Navigation</h2>
-          <ul className="mt-3 divide-y divide-zinc-200 text-sm text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Tools</h2>
+          <ul className="mt-3 divide-y divide-zinc-200 text-base text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
             <li className="py-2">
               <Link
                 href="/generator"
                 className={`flex items-center gap-2 ${activeHref === "/generator" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
               >
                 <Astroid className="h-4 w-4 shrink-0" aria-hidden="true" />
-                dext:gen
+                dext : gen
+              </Link>
+            </li>
+            <li className="py-2">
+              <Link
+                href="/img"
+                className={`flex items-center gap-2 ${activeHref === "/img" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
+              >
+                <ImageIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                dext : img
               </Link>
             </li>
             <li className="py-2">
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                 <Headphones className="h-4 w-4 shrink-0" aria-hidden="true" />
-                dext:voice
+                dext : voice
               </div>
             </li>
             <li className="py-2">
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                 <LayoutList className="h-4 w-4 shrink-0" aria-hidden="true" />
-                desk:task
+                desk : task
               </div>
             </li>
             <li className="py-2">
               <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                 <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
-                dext:check
+                dext : check
               </div>
+            </li>
+            <li className="py-2">
+              <Link
+                href="/presetgen"
+                className={`flex items-center gap-2 ${activeHref === "/presetgen" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
+              >
+                <WandSparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
+                dext : presetgen
+              </Link>
             </li>
             <li className="py-2">
               <Link
@@ -63,7 +81,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
                 className={`flex items-center gap-2 ${activeHref === "/library" ? "font-medium text-sky-700 dark:text-accent-300" : "transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"}`}
               >
                 <Library className="h-4 w-4 shrink-0" aria-hidden="true" />
-                dext:lib
+                dext : lib
               </Link>
             </li>
           </ul>
@@ -74,7 +92,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
             <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
             BIBLIOTHEK
           </h2>
-          <ul className="mt-3 divide-y divide-zinc-200 text-sm text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
+          <ul className="mt-3 divide-y divide-zinc-200 text-base text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
             {enabledTextsorten.map((textsorte) => (
               <li key={`sidebar-textsorte-${textsorte}`} className="py-2">
                 <Link
@@ -86,7 +104,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
               </li>
             ))}
             {disabledTextsorten.map((textsorte) => (
-              <li key={`sidebar-textsorte-disabled-${textsorte}`} className="py-2 text-zinc-400 dark:text-zinc-500" aria-disabled="true">
+              <li key={`sidebar-textsorte-disabled-${textsorte}`} className="py-2 text-zinc-400 dark:text-zinc-500">
                 {textsorte} (demnaechst)
               </li>
             ))}
@@ -95,7 +113,7 @@ export default function AppSidebar({ activeHref, activeTextsorte, enabledTextsor
 
         <section className="mt-6">
           <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">System</h2>
-          <ul className="mt-3 divide-y divide-zinc-200 text-sm text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
+          <ul className="mt-3 divide-y divide-zinc-200 text-base text-zinc-700 dark:divide-zinc-700 dark:text-zinc-300">
             <li className="py-2">
               <Link
                 href="/system/ger-settings"

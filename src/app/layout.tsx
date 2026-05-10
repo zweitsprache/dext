@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Encode_Sans_Semi_Condensed } from "next/font/google";
+import { Encode_Sans } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const encodeSans = Encode_Sans_Semi_Condensed({
+const encodeSans = Encode_Sans({
   variable: "--font-encode-sans",
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${encodeSans.variable} h-full antialiased`}
+      className={`${encodeSans.className} ${encodeSans.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col"><Providers>{children}</Providers></body>
