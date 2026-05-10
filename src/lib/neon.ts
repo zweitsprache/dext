@@ -772,27 +772,39 @@ export async function getPublishedTexts(limit = 50, onlyPublic = true): Promise<
   try {
     await ensureSchema();
 
-    let query = `
-      SELECT
-        id,
-        generated_text_id,
-        title,
-        summary,
-        content_paragraphs,
-        image_url,
-        image_prompt,
-        is_public,
-        published_at
-      FROM published_texts
-    `;
-
-    if (onlyPublic) {
-      query += ` WHERE is_public = true`;
-    }
-
-    query += ` ORDER BY published_at DESC LIMIT ${limit}`;
-
-    const rows = await sql(query);
+    const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.min(200, Math.trunc(limit))) : 50;
+    const rows = onlyPublic
+      ? await sql`
+          SELECT
+            id,
+            generated_text_id,
+            title,
+            summary,
+            content_paragraphs,
+            image_url,
+            image_prompt,
+            is_public,
+            published_at
+          FROM published_texts
+          WHERE is_public = true
+          ORDER BY published_at DESC
+          LIMIT ${normalizedLimit}
+        `
+      : await sql`
+          SELECT
+            id,
+            generated_text_id,
+            title,
+            summary,
+            content_paragraphs,
+            image_url,
+            image_prompt,
+            is_public,
+            published_at
+          FROM published_texts
+          ORDER BY published_at DESC
+          LIMIT ${normalizedLimit}
+        `;
 
     return rows
       .filter((row) => row && typeof row === "object")

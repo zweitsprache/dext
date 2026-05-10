@@ -13,9 +13,9 @@ if (!isAuthConfigured && process.env.NODE_ENV !== "production") {
 
 export const auth = isAuthConfigured
   ? createNeonAuth({
-      baseUrl,
+      baseUrl: baseUrl!,
       cookies: {
-        secret: cookieSecret,
+        secret: cookieSecret!,
         sessionDataTtl: 300,
       },
     })

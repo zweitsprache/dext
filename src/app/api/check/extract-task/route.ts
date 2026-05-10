@@ -40,6 +40,7 @@ async function extractTextFromImage(file: File): Promise<string> {
           {
             type: "input_image",
             image_url: dataUrl,
+            detail: "auto",
           },
         ],
       },

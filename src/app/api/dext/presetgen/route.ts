@@ -328,6 +328,13 @@ function sanitizePreset(candidate: PresetFormValues, sourceText: string, niveau:
 
 export async function POST(request: NextRequest) {
   try {
+    if (!auth) {
+      return new Response(JSON.stringify({ error: "Auth nicht konfiguriert" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data: session } = await auth.getSession();
     if (!session?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {

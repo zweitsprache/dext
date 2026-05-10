@@ -50,8 +50,14 @@ export default function PublishDialog({ isOpen, result, onClose, onPublish, isLo
     e.preventDefault();
     setError("");
     setPublishing(true);
+    const currentResult = result;
 
     try {
+      if (!currentResult) {
+        setError("No result available");
+        return;
+      }
+
       if (!title.trim()) {
         setError("Title is required");
         return;
@@ -64,7 +70,7 @@ export default function PublishDialog({ isOpen, result, onClose, onPublish, isLo
       await onPublish({
         title: title.trim(),
         summary: summary.trim(),
-        paragraphs: result.paragraphs,
+        paragraphs: currentResult.paragraphs,
         imagePrompt: generateImage ? imagePrompt.trim() || undefined : undefined,
         isPublic,
       });
@@ -194,7 +200,8 @@ export default function PublishDialog({ isOpen, result, onClose, onPublish, isLo
           </button>
           <button
             onClick={(e) => {
-              const form = (e.target as HTMLElement).closest("div").querySelector("form");
+              const container = (e.currentTarget as HTMLElement).closest("div");
+              const form = container?.querySelector("form");
               if (form) {
                 form.dispatchEvent(new Event("submit", { bubbles: true }));
               }
